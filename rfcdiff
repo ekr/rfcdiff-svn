@@ -37,22 +37,34 @@
 #		http://www.levkowetz.com/ietf/
 #
 #
+#	16 Nov 2003	v0.34 - removed listing of environment when no
+#			files were given on the command line. Added
+#			help text. Added the possibility of using wdiff to get
+#			the changed words in a change block highlighted.
+#
 #	23 Oct 2003	v0.33 - using different dir's for the stripped
 #			files, to be able to diff files with the same
 #			basename. 
+#
 #	 2 Sep 2003	v0.32 - fixed spurious error message when using
 #			--wdiff option
+#
 #	 1 Sep 2003	v0.31 - not touching the original files, using
 #			temporary directory for work files.
+#
 #	29 Aug 2003	Removed explicit font size for output. Changed
 #			regexp for page start (now accepting space in
 #			"Internet Draft".
+#
 #	16 Apr 2003	v0.29 - added wdiff support
+#
 #	 6 Mar 2003	v0.28 - added --html, --chbars and --diff switches
+#
 #	 3 Mar 2003	v0.27 - Changed page regexp to accept lowercase
 #				'p'.
-#	 2 Feb 2003	- Expanded to also provide side-by-side html diff
 #
+#	 2 Feb 2003	Expanded to provide side-by-side html diff, in
+#			addition to changebars in .txt files
 #	
 
 export version="v0.33"
@@ -156,6 +168,8 @@ BEGIN	{
 	      if ($1+0 > maxpage) maxpage = $1+0;
 	   }
 
+	   usewdiff = ENVIRON["wdiff"] == "yes";
+
 	}
 
 function header(file1, file2) {
@@ -177,6 +191,8 @@ th { font-size: 12pt; } \n\
 .left   { background-color: #EEE; } \n\
 .right  { background-color: #FFF; } \n\
 .diff   { background-color: lightblue; } \n\
+.lblock { background-color: #DDE; } \n\
+.rblock { background-color: #EEF; } \n\
 .insert { background-color: lightgreen; } \n\
 .delete { background-color: #FCC; } \n\
 .void   { background-color: lightyellow; } \n\
@@ -220,63 +236,92 @@ function worddiff(w1, w2) {
    wordpart[3] = suffix;
 }
 
+function chunkdiff(lclass, rclass) {
+   if (num1 == linenum && num2 == linenum) return;
+   chunk++;
+
+   chunkfile1= sprintf("1/chunk%04d", chunk);
+   chunkfile2= sprintf("2/chunk%04d", chunk);
+   printf "" > chunkfile1;
+   printf "" > chunkfile2;
+   for (l = linenum; l < num1; l++) { print stack1[l] >> chunkfile1; }
+   for (l = linenum; l < num2; l++) { print stack2[l] >> chunkfile2; }
+   close(chunkfile1);
+   close(chunkfile2);
+
+   cmd1 = sprintf("wdiff -n -2 -w \"<span class=\\\"insert\\\">\"  -x \"</span>\" %s %s", chunkfile1, chunkfile2);
+   cmd2 = sprintf("wdiff -n -1 -y \"<span class=\\\"delete\\\">\"  -z \"</span>\" %s %s", chunkfile1, chunkfile2);
+
+   for (l = linenum; l < num1; l++) { cmd1 | getline; stack1[l] = $0; }
+   for (l = linenum; l < num2; l++) { cmd2 | getline; stack2[l] = $0; }
+
+   close(cmd1);
+   close(cmd2);
+}
+
 function flush() {
-	   rclass = lclass = "diff";
-	   if (num1 == linenum) 
-	      rclass = "insert";
-	   if (num2 == linenum) 
-	      lclass = "delete";
-	   multiline = ((num1 - linenum) > 1) || ((num2 - linenum) > 1);
-	   for (l = linenum; l < num1 || l < num2; l++) {
-	      if (l in stack1) {
-		 line1 = stack1[l];
-		 delete stack1[l];
-		 if (line1 == "")
-		    line1 = "                                                                        ";
-	      } else {
-		 line1 = "";
-	      }
-	      if (l in stack2) {
-		 line2 = stack2[l];
-		 delete stack2[l];
-		 if (line2 == "")
-		    line2 = "                                                                        ";
-	      } else {
-		 line2 = "";
-	      }
-	      worddiff(line1, line2);
+   rclass = lclass = "diff";
+   if (num1 == linenum) 
+      rclass = "insert";
+   if (num2 == linenum) 
+      lclass = "delete";
+   multiline = ((num1 - linenum) > 1) || ((num2 - linenum) > 1);
+   if (multiline && usewdiff) chunkdiff(lclass, rclass);
 
-	     if (wordpart[1] == "" && !multiline) 
-	        rclass = "insert";
-	     if (wordpart[2] == "" && !multiline) 
-		lclass = "delete";
+   for (l = linenum; l < num1 || l < num2; l++) {
+      if (l in stack1) {
+	 line1 = stack1[l];
+	 delete stack1[l];
+	 if (line1 == "")
+	    line1 = "                                                                        ";
+      } else {
+	 line1 = "";
+      }
+      if (l in stack2) {
+	 line2 = stack2[l];
+	 delete stack2[l];
+	 if (line2 == "")
+	    line2 = "                                                                        ";
+      } else {
+	 line2 = "";
+      }
 
-	      left  = sprintf("<td class=\"left\" >%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], lclass, wordpart[1], wordpart[3]);
-	      right = sprintf("<td class=\"right\">%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], rclass, wordpart[2], wordpart[3]);
-	      printf "      <tr>%s<td> </td>%s</tr>\n", left, right;
-	   }
-	}
+      if (multiline && usewdiff) {
+	 left  = sprintf("<td class=\"lblock\">%s</td>", line1);
+	 right = sprintf("<td class=\"rblock\">%s</td>", line2);
+      } else {
+	 worddiff(line1, line2);
+
+	 if (wordpart[1] == "" && !multiline) rclass = "insert";
+	 if (wordpart[2] == "" && !multiline) lclass = "delete";
+
+	 left  = sprintf("<td class=\"left\" >%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], lclass, wordpart[1], wordpart[3]);
+	 right = sprintf("<td class=\"right\">%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], rclass, wordpart[2], wordpart[3]);
+      }
+      printf "      <tr>%s<td> </td>%s</tr>\n", left, right;
+   }
+}
 
 function getpage(line) {
-	    line = line + ENVIRON["prelines"];
-	    page = "?";
-	    for (p=1; p <= maxpage; p++) {
-		if (pageend[p] == 0) continue;
-		if (line <= pageend[p]) {
-		    page = p;
-		    break;
-		}
-	    }
-	    return page;
+    line = line + ENVIRON["prelines"];
+    page = "?";
+    for (p=1; p <= maxpage; p++) {
+	if (pageend[p] == 0) continue;
+	if (line <= pageend[p]) {
+	    page = p;
+	    break;
 	}
+    }
+    return page;
+}
 
 function getpageline(line, page) {
-	    if (pageend[page-1]+0 != 0) {
-		return line + ENVIRON["prelines"] - pageend[page-1] + 3; # 3 is header lines stripped
-	    } else {
-		return "?"
-	    } 
-	}
+    if (pageend[page-1]+0 != 0) {
+	return line + ENVIRON["prelines"] - pageend[page-1] + 3; # 3 is header lines stripped
+    } else {
+	return "?"
+    } 
+}
 
 /^@@/	{
 	   linenum = 0 - $2;
@@ -294,6 +339,7 @@ function getpageline(line, page) {
 	   gsub("<", "\\&lt;")
 	   gsub(">", "\\&gt;")
 	   line = substr($0, 2);
+
 	   flush();
 	   printf "      <tr><td class=\"left\">%s</td><td> </td><td class=\"right\">%s</td></tr>\n", line, line;
 	   linenum ++;
@@ -351,14 +397,15 @@ while [ $# -gt 0 ]; do
    shift
 done
 
-set $files
-
 # ----------------------------------------------------------------------
 # Maybe get one of the files from cvs. Determine output file name. Make
 # working file copies
 # ----------------------------------------------------------------------
 #set -x
 
+if [ "$files" ]; then
+  set $files
+fi
 if [ $# -ge 2 ]; then
    if [ $1 = $2 ]; then
       echo The files are the same file
@@ -370,7 +417,19 @@ if [ $# -ge 2 ]; then
    base2=$(basename $2)
    outbase=$(worddiff $base2 $base1 "%s%s-from-%s")
 else
-   echo "Usage: chbars file1 file2"
+   base=$(basename $0)
+   echo "usage: $base [options] file1 file2
+
+$base takes two RFCs or Internet-Drafts in text form as input, and produces
+output which indicates the differences found in one of various forms, controlled
+by the options listed below. In all cases, page headers and page footers are
+stripped before looking for changes.
+
+--chbars	Produce changebar marked .txt output (default)
+--html		Produce side-by-side .html diff
+--diff		Produce a simple diff output
+--wdiff		Produce wdiff output
+"
    exit 1
 fi
 
@@ -385,7 +444,6 @@ mkdir $workdir/2 || die "$0: Error: Failed to create temporary directory '$workd
 # ----------------------------------------------------------------------
 # Strip headers/footers from both files
 # ----------------------------------------------------------------------
-
 
 # The last file we strip determines the page numbers for htmldiff
 strip $2 > $workdir/2/$base2
@@ -410,6 +468,19 @@ else
 fi
 if [ "$outfile" ]; then
    tempout=$(basename $outfile)
+fi
+
+# ----------------------------------------------------------------------
+# Check if we can use wdiff for block diffs
+# ----------------------------------------------------------------------
+if [ -e "/bin/wdiff" ]; then
+   export wdiff="yes";
+fi
+if [ -e "/usr/bin/wdiff" ]; then
+   export wdiff="yes";
+fi
+if [ -e "/usr/local/bin/wdiff" ]; then
+   export wdiff="yes";
 fi
 
 # ----------------------------------------------------------------------
@@ -438,8 +509,8 @@ cd -
 
 if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
 if [ -f $pagecache ]; then rm $pagecache; fi
-rmdir $workdir/1
-rmdir $workdir/2
+rm -fr $workdir/1
+rm -fr $workdir/2
 rmdir $workdir
 
 
