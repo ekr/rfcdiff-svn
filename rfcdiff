@@ -24,6 +24,9 @@
 #	--help		Show this help
 #	--info "Synopsis|Usage|Copyright|Description|Log"
 #			Show various info
+#	--width	N	Set a maximum width of N characters for the
+#			display of each half of the old/new html diff
+#
 #
 # Copyright:
 #	-----------------------------------------------------------------
@@ -67,6 +70,10 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
+#	
+#	
+#	22 Jan 2004	v1.02 - Added line-breaking functionality through
+#			the --width option
 #	
 #	17 Dec 2003	v1.01 - Fixed a bug where diffs with no text
 #			occurring after the last change would be shown
@@ -134,7 +141,7 @@
 # End:
 #	
 
-export version="v1.01"
+export version="v1.02"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -228,6 +235,8 @@ BEGIN	{
 	   num1 = 1;
 	   num2 = 1;
 
+	   fixup = 0;
+
 	   # Read pagecache
 	   maxpage = 1
 	   pageend[0] = 2;
@@ -239,6 +248,7 @@ BEGIN	{
 	   wdiff = ENVIRON["wdiffbin"]
 	   base1 = ENVIRON["base1"]
 	   base2 = ENVIRON["base2"]
+	   optwidth = ENVIRON["optwidth"]
 
 	   header(base1, base2);
 
@@ -268,6 +278,15 @@ th { font-size: 12pt; } \n\
 .insert { background-color: cyan; } \n\
 .delete { background-color: #ACF; } \n\
 .void   { background-color: lightyellow; } \n\
+.cont	{ background-color: #EEE; } \n\
+.linebr { background-color: #AAA; } \n\
+.elipsis{ background-color: #AAA; } \n\
+.left .cont { background-color: #DDD; } \n\
+.right .cont { background-color: #EEE; } \n\
+.lblock .cont { background-color: #9D9; } \n\
+.rblock .cont { background-color: #DD6; } \n\
+.insert .cont { background-color: #0DD; } \n\
+.delete .cont { background-color: #8AD; } \n\
 </style> \n\
 <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"> \
 <tr bgcolor=\"orange\"><th>&nbsp;%s&nbsp;</th><th> </th><th>&nbsp;%s&nbsp;</th><tr> \
@@ -340,7 +359,11 @@ function flush() {
 	 line1 = stack1[l];
 	 delete stack1[l];
 	 if (line1 == "")
-	    line1 = "                                                                        ";
+	    if (optwidth > 0) {
+		line1 = substr("                                                                                                                                                                ",0,optwidth);
+	    } else {
+		line1 = "                                                                                ";
+	    }
       } else {
 	 line1 = "";
       }
@@ -348,7 +371,11 @@ function flush() {
 	 line2 = stack2[l];
 	 delete stack2[l];
 	 if (line2 == "")
-	    line2 = "                                                                        ";
+	    if (optwidth > 0) {
+		line1 = substr("                                                                                                                                                                ",0,optwidth);
+	    } else {
+		line1 = "                                                                                ";
+	    }
       } else {
 	 line2 = "";
       }
@@ -383,8 +410,46 @@ function getpageline(line, page) {
     if (pageend[page-1]+0 != 0) {
 	return line + ENVIRON["prelines"] - pageend[page-1] + 3; # 3 is header lines stripped
     } else {
-	return "?"
+	return "?";
     } 
+}
+
+function htmlesc(line) {
+    gsub("&", "\\&amp;", line);
+    gsub("<", "\\&lt;", line);
+    gsub(">", "\\&gt;", line);
+    return line;
+}
+
+function expandtabs(line) {
+    spaces = "        ";
+    while (pos = index(line, "\t")) {
+	sub("\t", substr(spaces, 0, (8-pos%8)), line);
+    }
+    return line;
+}
+
+function maybebreakline(line,    width) {
+    width = optwidth;
+    if (width > 0) {
+	line = expandtabs(line);
+
+	if (length(line) > width) {
+	    new = htmlesc(substr(line, 0, width)) "<span class=\"linebr\">\\</span><br /><span class=\"elipsis\">..</span><span class=\"cont\">";
+	    old = substr(line, width+1);
+	    width = width-2;
+	    while (length(old) > width) {
+		new = new htmlesc(substr(old, 0, width)) "<span class=\"linebr\">\\</span><br /><span class=\"elipsis\">..</span>";
+		old = substr(old, width+1);
+	    }
+	    line = new htmlesc(old) "</span>";
+	} else {
+	    line = htmlesc(line);
+	}
+    } else {
+	line = htmlesc(line);
+    }
+    return line;
 }
 
 /^@@/	{
@@ -399,10 +464,8 @@ function getpageline(line, page) {
 /^---/	{  next; }
 /^[+][+][+]/	{  next; }
 /^[ ]/	{
-	   gsub("&", "\\&amp;")
-	   gsub("<", "\\&lt;")
-	   gsub(">", "\\&gt;")
 	   line = substr($0, 2);
+	   line = maybebreakline(line);
 
 	   flush();
 	   printf "      <tr><td class=\"left\">%s</td><td> </td><td class=\"right\">%s</td></tr>\n", line, line;
@@ -411,18 +474,16 @@ function getpageline(line, page) {
 	   num2 = linenum;
 	}
 /^-/	{
-	   gsub("&", "\\&amp;")
-	   gsub("<", "\\&lt;")
-	   gsub(">", "\\&gt;")
 	   line = substr($0, 2);
+	   line = maybebreakline(line);
+
 	   stack1[num1] = line;
 	   num1++;
 	}
 /^[+]/	{
-	   gsub("&", "\\&amp;")
-	   gsub("<", "\\&lt;")
-	   gsub(">", "\\&gt;")
 	   line = substr($0, 2);
+	   line = maybebreakline(line);
+
 	   stack2[num2] = line;
 	   num2++;
 	}
@@ -529,7 +590,7 @@ die() {
 # Process options
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
-optkeep=0; optinfo=0;
+optkeep=0; optinfo=0; optwidth=0;
 
 while [ $# -gt 0 ]; do
    case "$1" in
@@ -543,6 +604,7 @@ while [ $# -gt 0 ]; do
       --keep)	optkeep=1;;
       --info)	optinfo=1; keyword=$2; shift;;
       --help)	optinfo=1; keyword="Usage";;
+      --width)	optwidth=$2; shift;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
       -v) echo "$basename $version"; exit 0;;
@@ -552,6 +614,8 @@ while [ $# -gt 0 ]; do
    esac
    shift
 done
+
+export optwidth
 
 # ----------------------------------------------------------------------
 # Determine output file name. Maybe output usage and exit.
