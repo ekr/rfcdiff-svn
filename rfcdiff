@@ -93,6 +93,8 @@
 #
 # Log:
 #			
+#	06 Jan 2005	v1.21 - tweaked a style setting	
+#			
 #	09 Dec 2004	v1.20 -	fixed the same bug again, a bit better
 #			this time :-)
 #			
@@ -235,7 +237,7 @@
 # End:
 #
 
-export version="1.20"
+export version="1.21"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -412,6 +414,7 @@ function header(file1, file2) {
 "    tr      { } \n" \
 "    td      { white-space: pre; font-family: monospace; vertical-align: top; } \n" \
 "    th      { font-size: 11pt; } \n" \
+"    small   { font-family: Verdana, Helvetica, sans-serif; } \n" \
 "    .small  { font-size: 8pt; } \n" \
 "    .left   { background-color: #EEE; } \n" \
 "    .right  { background-color: #FFF; } \n" \
