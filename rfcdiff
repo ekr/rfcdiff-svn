@@ -24,10 +24,14 @@
 #       -----------------------------------------------------------------
 #
 #	The purpose of this program is to compare two versions of an
-#	internet-draft, and as output produce a text file which
-#	contains the text of the second draft, with changebars in the
-#	left margin which indicates the lines which have changed from
-#	the first draft.
+#	internet-draft, and as output produce a diff in one of several
+#	formats:
+#		- side-by-side html diff
+#		- paged wdiff output in a text terminal
+#		- a text file with changebars in the left margin
+#		- a simple unified diff output
+#	In all cases, internet-draft headers and footers are stripped
+#	before generating the diff, to produce a cleaner diff.
 #
 #	It is called as
 #
@@ -36,6 +40,10 @@
 #	The latest version is avaialble from
 #		http://www.levkowetz.com/ietf/
 #
+#
+#	20 Nov 2003	v0.36 - Added --browse option, to optionally
+#			start a browser to show html diff output.
+#			Refined how we look for a wdiff binary.
 #
 #	18 Nov 2003	v0.35 - minor tweaks to header/footer stripping
 #			regexps. Changed color marking of differences.
@@ -71,7 +79,7 @@
 #			addition to changebars in .txt files
 #	
 
-export version="v0.35"
+export version="v0.36"
 export pagecache="/tmp/pagecache-$$"
 export prelines="10"
 export basename=$(basename $0)
@@ -173,7 +181,7 @@ BEGIN	{
 	      if ($1+0 > maxpage) maxpage = $1+0;
 	   }
 
-	   usewdiff = ENVIRON["wdiff"] == "yes";
+	   wdiff = ENVIRON["wdiffbin"]
 
 	}
 
@@ -254,8 +262,8 @@ function chunkdiff() {
    close(chunkfile1);
    close(chunkfile2);
 
-   cmd1 = sprintf("wdiff -n -2 -w \"<span class=\\\"delete\\\">\"  -x \"</span>\" %s %s", chunkfile1, chunkfile2);
-   cmd2 = sprintf("wdiff -n -1 -y \"<span class=\\\"insert\\\">\"  -z \"</span>\" %s %s", chunkfile1, chunkfile2);
+   cmd1 = sprintf("%s -n -2 -w \"<span class=\\\"delete\\\">\"  -x \"</span>\" %s %s", wdiff, chunkfile1, chunkfile2);
+   cmd2 = sprintf("%s -n -1 -y \"<span class=\\\"insert\\\">\"  -z \"</span>\" %s %s", wdiff, chunkfile1, chunkfile2);
 
    for (l = linenum; l < num1; l++) { cmd1 | getline; stack1[l] = $0; }
    for (l = linenum; l < num2; l++) { cmd2 | getline; stack2[l] = $0; }
@@ -266,7 +274,7 @@ function chunkdiff() {
 
 function flush() {
    multiline = ((num1 - linenum) > 1) || ((num2 - linenum) > 1);
-   if (multiline && usewdiff) chunkdiff();
+   if (multiline && (wdiff != "")) chunkdiff();
 
    for (l = linenum; l < num1 || l < num2; l++) {
       if (l in stack1) {
@@ -286,7 +294,7 @@ function flush() {
 	 line2 = "";
       }
 
-      if (multiline && usewdiff) {
+      if (multiline && (wdiff != "")) {
 	 left  = sprintf("<td class=\"lblock\">%s</td>", line1);
 	 right = sprintf("<td class=\"rblock\">%s</td>", line2);
       } else {
@@ -373,6 +381,57 @@ END	{
 }
 
 # ----------------------------------------------------------------------
+# Utility to find an executable
+# ----------------------------------------------------------------------
+lookfor() {
+    for b in "$@"; do
+	found=$(which "$b" 2>/dev/null)
+	if [ -n "$found" ]; then
+	    if [ -x "$found" ]; then
+		echo "$found"
+		return
+	    fi
+	fi
+    done
+}
+
+# ----------------------------------------------------------------------
+# Utility to start a browser
+# ----------------------------------------------------------------------
+
+browse() {
+    browser=$(lookfor phoenix MozillaFirebird mozilla opera Netscape netscape)
+
+    if [ -z "$browser" ]; then
+	echo "Couldn't find any browser, can't display $*."
+	exit 1
+    fi
+
+    # make sure file name is absolute
+    if [ ${1#/} == $1 ]; then
+        # not absolute path, add pwd
+	arg="file://$PWD/$1"
+    else
+	arg="file://$1"
+    fi
+
+
+    # see if a browser is running, act accordingly
+    $browser -remote "ping()" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+	# use running instance
+	#echo "$browser -raise -remote \"openurl($arg, new-tab)\""
+	$browser -raise -remote "openurl($arg, new-tab)"
+    else
+	# error exit: no running instance
+	echo "Starting web browser."
+	#echo "$browser $arg >/dev/null 2>&1 &"
+	$browser $arg >/dev/null 2>&1 &
+    fi
+}
+
+
+# ----------------------------------------------------------------------
 # Utility for error exit
 # ----------------------------------------------------------------------
 die() {
@@ -383,7 +442,7 @@ die() {
 # ----------------------------------------------------------------------
 # Process options
 # ----------------------------------------------------------------------
-opthtml=1; optdiff=0; optchbars=0; optwdiff=0;
+opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0;
 while [ $# -gt 0 ]; do
    case "$1" in
       --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0;;
@@ -391,6 +450,7 @@ while [ $# -gt 0 ]; do
       --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0;;
       --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1;;
       --version)echo "rfcchbars $version"; exit 0;;
+      --browse) optshow=1;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
       -v) echo "rfcchbars $version"; exit 0;;
@@ -430,6 +490,8 @@ stripped before looking for changes.
 --html		Produce side-by-side .html diff (default)
 --diff		Produce a regular diff output
 --wdiff		Produce paged wdiff output
+
+--browse	Show html output in browser
 "
    exit 1
 fi
@@ -474,15 +536,7 @@ fi
 # ----------------------------------------------------------------------
 # Check if we can use wdiff for block diffs
 # ----------------------------------------------------------------------
-if [ -e "/bin/wdiff" ]; then
-   export wdiff="yes";
-fi
-if [ -e "/usr/bin/wdiff" ]; then
-   export wdiff="yes";
-fi
-if [ -e "/usr/local/bin/wdiff" ]; then
-   export wdiff="yes";
-fi
+export wdiffbin=$(lookfor wdiff)
 
 # ----------------------------------------------------------------------
 # Do diff
@@ -514,4 +568,7 @@ rm -fr $workdir/1
 rm -fr $workdir/2
 rmdir $workdir
 
+if [ $optshow -gt 0 ]; then
+   browse $outfile
+fi
 
