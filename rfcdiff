@@ -133,8 +133,12 @@ td { white-space: pre; font-family: monospace; } \n\
 th { font-size: 12pt; } \n\
 .left { background-color: #EEE; } \n\
 .right { background-color: #FFF; } \n\
-.diff { background-color: lightblue; } \n\
-.void { background-color: lightyellow; } \n\
+.diffword { background-color: #A0E0F0; } \n\
+.diffline { background-color: #D0FCFF; } \n\
+.insword  { background-color: #8F8; } \n\
+.insline  { background-color: #BFB; } \n\
+.delword  { background-color: #EE4; } \n\
+.delline  { background-color: #FF8; } \n\
 </style> \n\
 <table border='0' cellpadding='0' cellspacing='0'> \
 <tr bgcolor='orange'><th>%s</th><th> </th><th>%s</th><tr> \
@@ -176,6 +180,18 @@ function worddiff(w1, w2) {
 }
 
 function flush() {
+	   lword = rword = "diffword";
+	   lline = rline = "diffline";
+	   if (num1 == linenum) {
+	      rword = "insword";
+	      rline = "insline";
+	      lline = "left"
+	   }
+	   if (num2 == linenum) {
+	      lword = "delword";
+	      lline = "delline";
+	      rline = "right"
+	   }
 	   for (l = linenum; l < num1 || l < num2; l++) {
 	      if (l in stack1) {
 		 line1 = stack1[l];
@@ -195,8 +211,8 @@ function flush() {
 	      }
 	      worddiff(line1, line2);
 
-	      left  = sprintf("<td class=\"left\" >%s<span class=\"diff\">%s</span>%s</td>", wordpart[0], wordpart[1], wordpart[3]);
-	      right = sprintf("<td class=\"right\">%s<span class=\"diff\">%s</span>%s</td>", wordpart[0], wordpart[2], wordpart[3]);
+	      left  = sprintf("<td class=\"%s\">%s<span class=\"%s\">%s</span>%s</td>", lline, wordpart[0], lword, wordpart[1], wordpart[3]);
+	      right = sprintf("<td class=\"%s\">%s<span class=\"%s\">%s</span>%s</td>", rline, wordpart[0], rword, wordpart[2], wordpart[3]);
 	      printf "      <tr>%s<td> </td>%s</tr>\n", left, right;
 	   }
 	}
