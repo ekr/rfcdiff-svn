@@ -90,6 +90,9 @@
 #
 # Log:
 #
+#	04 Sep 2004	v1.14 - Cleaned up html in a few places so it's
+#			now clean again.
+#
 #	11 Jun 2004	v1.13 - Tweaked the regexp to match section
 #			numbers slightly.  Added -wd option to diff
 #			also for the ab (rfc-editor before/after) diff.
@@ -199,7 +202,7 @@
 # End:
 #
 
-export version="1.13"
+export version="1.14"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -348,7 +351,7 @@ function header(file1, file2) {
   <meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\" /> \n\
   <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" /> \n\
   <title>Diff: %s - %s</title> \n\
-  <style> \n\
+  <style type=\"text/css\"> \n\
     body    { margin: 0.4ex; } \n\
     tr      { } \n\
     td      { white-space: pre; font-family: monospace; } \n\
@@ -611,7 +614,7 @@ END	{
 	   flush();
 	   printf("\n\
      <tr><td></td><td class=\"left\"></td><td> </td><td class=\"right\"></td><td></td></tr>\n\
-     <tr bgcolor=\"gray\"><th colspan=\"5\" align=\"center\"><a name=\"end\">&nbsp;%s&nbsp;</th></tr>\n\
+     <tr bgcolor=\"gray\"><th colspan=\"5\" align=\"center\"><a name=\"end\">&nbsp;%s&nbsp;</a></th></tr>\n\
      <tr><td colspan=\"5\" align=\"center\"><br/><small><small><i>This html diff was produced by rfcdiff %s, available from <a href=\"http://www.levkowetz.com/ietf/tools/rfcdiff/\">http://www.levkowetz.com/ietf/tools/rfcdiff/</a></i></small></small></td></tr>\n\
    </table>\n\
    </body>\n\
