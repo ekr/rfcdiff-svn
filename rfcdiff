@@ -39,7 +39,7 @@
 #	 2 Feb 2003	- Expanded to also provide side-by-side html diff
 #
 
-version="0.23"
+version="0.24"
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -187,12 +187,11 @@ function worddiff(w1, w2) {
 
 function flush() {
 	   rclass = lclass = "diff";
-	   if (num1 == linenum) {
+	   if (num1 == linenum) 
 	      rclass = "insert";
-	   }
-	   if (num2 == linenum) {
+	   if (num2 == linenum) 
 	      lclass = "delete";
-	   }
+	   multiline = ((num1 - linenum) > 1) || ((num2 - linenum) > 1);
 	   for (l = linenum; l < num1 || l < num2; l++) {
 	      if (l in stack1) {
 		 line1 = stack1[l];
@@ -211,6 +210,11 @@ function flush() {
 		 line2 = "";
 	      }
 	      worddiff(line1, line2);
+
+	     if (wordpart[1] == "" && !multiline) 
+	        rclass = "insert";
+	     if (wordpart[2] == "" && !multiline) 
+		lclass = "delete";
 
 	      left  = sprintf("<td class=\"left\" >%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], lclass, wordpart[1], wordpart[3]);
 	      right = sprintf("<td class=\"right\">%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], rclass, wordpart[2], wordpart[3]);
