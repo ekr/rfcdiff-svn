@@ -20,6 +20,8 @@
 #	
 #	--wdiff		Produce paged wdiff output
 #	
+#	--abdiff	Produce before/after diff output
+#	
 #	--browse	Show html output in browser
 #	
 #	--keep		Don't delete temporary workfiles
@@ -84,6 +86,10 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
+#	
+#	23 Feb 2004	v1.09 - Started work on an Old/New diff mode,
+#			suitable for diff summaries to mailing lists,
+#			issue trackers, reviewers & rfc-editor.
 #	
 #	22 Feb 2004	v1.08 - Added --body option to exclude
 #			boilerplate and table of contents changes. 
@@ -175,7 +181,7 @@
 # End:
 #	
 
-export version="v1.08"
+export version="1.09"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -281,11 +287,9 @@ BEGIN	{
 # Generate a html page with side-by-side diff from a unified diff
 # ----------------------------------------------------------------------
 htmldiff() {
-   awk -v file1=$1 -v file2=$2 '
+   awk '
 BEGIN	{
            FS = "[ \t,]";	   
-
-	   fixup = 0;
 
 	   # Read pagecache1
 	   maxpage[1] = 1
@@ -311,7 +315,6 @@ BEGIN	{
 	   cmdline = sub("-", " -", ENVIRON["cmdline"])
 
 	   header(base1, base2);
-
 	}
 
 function header(file1, file2) {
@@ -592,8 +595,39 @@ END	{
    </body>\n\
    </html>\n", diffnum?"End of changes.":"No changes.", ENVIRON["version"]);
 	}
-' $3
+' $1
 }
+
+# ----------------------------------------------------------------------
+# Generate before/after text output from a context diff
+# ----------------------------------------------------------------------
+abdiff() {
+awk '
+BEGIN	{
+	   # Read pagecache1
+	   maxpage[1] = 1
+	   pageend[1,0] = 2;
+	   while ( getline < ENVIRON["pagecache1"] > 0) {
+	      pageend[1,$1] = $2;
+	      if ($1+0 > maxpage[1]) maxpage[1] = $1+0;
+	   }
+
+	   # Read pagecache2
+	   maxpage[2] = 1
+	   pageend[2,0] = 2;
+	   while ( getline < ENVIRON["pagecache2"] > 0) {
+	      pageend[2,$1] = $2;
+	      if ($1+0 > maxpage[2]) maxpage[2] = $1+0;
+	   }
+	    
+	   base1 = ENVIRON["base1"]
+	   base2 = ENVIRON["base2"]
+	}
+	{   print; }
+
+'
+}
+
 
 # ----------------------------------------------------------------------
 # Utility to find an executable
@@ -684,15 +718,17 @@ die() {
 # Process options
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
-optkeep=0; optinfo=0; optwidth=0;  optnums=0;  optbody=0;
+optkeep=0; optinfo=0; optwidth=0;  optnums=0;  optbody=0; optabdiff=0;
 
 export cmdline="$*"
 while [ $# -gt 0 ]; do
    case "$1" in
-      --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0;;
-      --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0;;
-      --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0;;
-      --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1;;
+      --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optabdiff=0;;
+      --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0; optabdiff=0;;
+      --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0; optabdiff=0;;
+      --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1; optabdiff=0;;
+      --changes)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
+      --abdiff)	opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
       --version)echo -e "$basename\t$version"; exit 0;;
       --browse) optshow=1;;
       --nowdiff)optnowdiff=1;;
@@ -702,6 +738,7 @@ while [ $# -gt 0 ]; do
       --width)	optwidth=$2; shift;;
       --linenum)optnums=1;;
       --body)	optbody=1;;
+      --)	shift; break;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
       -v) echo "$basename $version"; exit 0;;
@@ -711,6 +748,7 @@ while [ $# -gt 0 ]; do
    esac
    shift
 done
+echo $1 $2 $3
 
 export optwidth
 export optnums
@@ -805,6 +843,9 @@ else
     if [ $optdiff -gt 0 ]; then
       outfile=$outbase.diff
     fi
+    if [ $optabdiff -gt 0 ]; then
+      outfile=$outbase.changes
+    fi
 fi
 if [ "$outfile" ]; then
    tempout=$(basename $outfile)
@@ -840,13 +881,16 @@ if cmp 1/$base1 2/$base2 >/dev/null; then
 fi
 
 if [ $opthtml -gt 0 ]; then
-   diff -ubBwd -$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
+   diff -bBwd -u$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
 fi
 if [ $optchbars -gt 0 ]; then
-   diff -ubBwd -10000 1/$base1 2/$base2 | tee $workdir/diff | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
+   diff -bBwd -u10000 1/$base1 2/$base2 | tee $workdir/diff | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
 fi
 if [ $optdiff -gt 0 ]; then
-   diff -ubBwd -$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
+   diff -bBwd -u$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
+fi
+if [ $optabdiff -gt 0 ]; then
+   diff -bBwd -c5 1/$base1 2/$base2 | tee $workdir/diff | abdiff
 fi
 if [ $optwdiff -gt 0 ]; then
    wdiff -a 1/$base1 2/$base2 
