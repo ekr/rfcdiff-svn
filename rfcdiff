@@ -32,6 +32,11 @@
 #
 #		chbars first-file second-file
 #
+#
+#	 2 Feb 2003 Expanded to also provide side-by-side html diff
+#
+
+version="0.22"
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -131,17 +136,15 @@ function header(file1, file2) {
 tr { font-size: 9pt; height: 1em; } \n\
 td { white-space: pre; font-family: monospace; } \n\
 th { font-size: 12pt; } \n\
-.left { background-color: #EEE; } \n\
-.right { background-color: #FFF; } \n\
-.diffword { background-color: #A0E0F0; } \n\
-.diffline { background-color: #D0FCFF; } \n\
-.insword  { background-color: #8F8; } \n\
-.insline  { background-color: #BFB; } \n\
-.delword  { background-color: #EE4; } \n\
-.delline  { background-color: #FF8; } \n\
+.left   { background-color: #EEE; } \n\
+.right  { background-color: #FFF; } \n\
+.diff   { background-color: lightblue; } \n\
+.insert { background-color: lightgreen; } \n\
+.delete { background-color: #FF8; } \n\
+.void   { background-color: lightyellow; } \n\
 </style> \n\
-<table border='0' cellpadding='0' cellspacing='0'> \
-<tr bgcolor='orange'><th>%s</th><th> </th><th>%s</th><tr> \
+<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"> \
+<tr bgcolor=\"orange\"><th>%s</th><th> </th><th>%s</th><tr> \
 ", file1, file2, file1, file2;
 }
 
@@ -180,17 +183,12 @@ function worddiff(w1, w2) {
 }
 
 function flush() {
-	   lword = rword = "diffword";
-	   lline = rline = "diffline";
+	   rclass = lclass = "diff";
 	   if (num1 == linenum) {
-	      rword = "insword";
-	      rline = "insline";
-	      lline = "left"
+	      rclass = "insert";
 	   }
 	   if (num2 == linenum) {
-	      lword = "delword";
-	      lline = "delline";
-	      rline = "right"
+	      lclass = "delete";
 	   }
 	   for (l = linenum; l < num1 || l < num2; l++) {
 	      if (l in stack1) {
@@ -211,8 +209,8 @@ function flush() {
 	      }
 	      worddiff(line1, line2);
 
-	      left  = sprintf("<td class=\"%s\">%s<span class=\"%s\">%s</span>%s</td>", lline, wordpart[0], lword, wordpart[1], wordpart[3]);
-	      right = sprintf("<td class=\"%s\">%s<span class=\"%s\">%s</span>%s</td>", rline, wordpart[0], rword, wordpart[2], wordpart[3]);
+	      left  = sprintf("<td class=\"left\" >%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], lclass, wordpart[1], wordpart[3]);
+	      right = sprintf("<td class=\"right\">%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], rclass, wordpart[2], wordpart[3]);
 	      printf "      <tr>%s<td> </td>%s</tr>\n", left, right;
 	   }
 	}
