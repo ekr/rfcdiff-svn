@@ -37,6 +37,10 @@
 #	--linenum	Show linenumbers for each line, not only at the
 #			start of each change section
 #
+#	--body		Strip document preamble (title, boilerplate and
+#			table of contents) and postamble (Intellectual
+#			Property Statement, Disclaimer etc)
+#
 # Copyright:
 #	-----------------------------------------------------------------
 #	
@@ -80,6 +84,9 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
+#	
+#	22 Feb 2004	v1.08 - Added --body option to exclude
+#			boilerplate and table of contents changes. 
 #	
 #	21 Feb 2004	v1.07 - Added diagnostic message when wdiff not
 #			found or wdiff version not recognised
@@ -168,7 +175,7 @@
 # End:
 #	
 
-export version="v1.07"
+export version="v1.08"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -211,6 +218,24 @@ strip() {
 				{ outline++; print; } 
 ' $1
 }
+
+
+# ----------------------------------------------------------------------
+# Strip preamble (title, boilerplate and table of contents) and
+# postamble (Intellectual Property Statement, Disclaimer etc) 
+# ----------------------------------------------------------------------
+bodystrip() {
+    awk '
+    /^[ \t]*Acknowledgment/		{ inbody = 0; }
+    /^[ \t]*Copyright Statement/	{ inbody = 0; }
+    /^[ \t]*Disclaimer of Validid/	{ inbody = 0; }
+    /^[ \t]*Intellectual Property/	{ inbody = 0; }
+    /^[ \t]*1. Introduction/	{ inbody = 1; }
+
+    inbody			{ print; }
+    ' $1
+}
+
 
 # ----------------------------------------------------------------------
 # From two words, find common prefix and differing part, join descriptively
@@ -659,7 +684,7 @@ die() {
 # Process options
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
-optkeep=0; optinfo=0; optwidth=0;  optnums=0;
+optkeep=0; optinfo=0; optwidth=0;  optnums=0;  optbody=0;
 
 export cmdline="$*"
 while [ $# -gt 0 ]; do
@@ -668,7 +693,7 @@ while [ $# -gt 0 ]; do
       --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0;;
       --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0;;
       --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1;;
-      --version)echo "$basename $version"; exit 0;;
+      --version)echo -e "$basename\t$version"; exit 0;;
       --browse) optshow=1;;
       --nowdiff)optnowdiff=1;;
       --keep)	optkeep=1;;
@@ -676,6 +701,7 @@ while [ $# -gt 0 ]; do
       --help)	optinfo=1; keyword="Usage";;
       --width)	optwidth=$2; shift;;
       --linenum)optnums=1;;
+      --body)	optbody=1;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
       -v) echo "$basename $version"; exit 0;;
@@ -726,7 +752,6 @@ mkdir $workdir/2 || die "$0: Error: Failed to create temporary directory '$workd
 # Strip headers/footers from both files, possibly after downloading
 # ----------------------------------------------------------------------
 
-# The last file we strip determines the page numbers for htmldiff
 wgetbin=$(lookfor wget)
 dowgetarg1=0
 dowgetarg2=0
@@ -751,6 +776,18 @@ if [ $dowgetarg1 -gt 0 ]; then
    $wgetbin -nv -O - $1 | strip > $workdir/1/$base1
 else
    strip $1 > $workdir/1/$base1
+fi
+
+
+# ----------------------------------------------------------------------
+# Maybe strip preamble (title, boilerplate and table of contents) and
+# postamble (Intellectual Property Statement, Disclaimer etc)
+# ----------------------------------------------------------------------
+if [ $optbody -gt 0 ]; then
+   bodystrip $workdir/1/$base1 > $workdir/1/$base1.stripped
+   mv $workdir/1/$base1.stripped $workdir/1/$base1
+   bodystrip $workdir/2/$base2 > $workdir/2/$base2.stripped
+   mv $workdir/2/$base2.stripped $workdir/2/$base2
 fi
 
 # ----------------------------------------------------------------------
