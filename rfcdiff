@@ -36,10 +36,15 @@
 #		http://www.levkowetz.com/ietf/
 #
 #
+#	16 Apr 2003	v0.29 - added wdiff support
+#	 6 Mar 2003	v0.28 - added --html, --chbars and --diff switches
+#	 3 Mar 2003	v0.27 - Changed page regexp to accept lowercase
+#				'p'.
 #	 2 Feb 2003	- Expanded to also provide side-by-side html diff
 #
+#	
 
-export version="v0.26"
+export version="v0.27"
 export pagecache="pagecache-$$.tmp"
 export prelines="10"
 
@@ -50,32 +55,33 @@ strip() {
   awk '
 			{ gsub(/\r/, ""); }
 			
-/\[Page [0-9]+\]$/	{
-				match($0, /\[Page [0-9]+\]$/);
-				print substr($0, RSTART+6, RLENGTH-7), outline > ENVIRON["pagecache"]
-				next;
-			}
-/^\f/			{ next; }
+/\[[Pp]age [0-9ivx]+\]$/	{
+					match($0, /\[[Pp]age [0-9ivx]+\]$/);
+					print substr($0, RSTART+6, RLENGTH-7), outline > ENVIRON["pagecache"]
+					next;
+				}
+/^\f/				{ next; }
 /^Internet-Draft.+[0-9]+$/	{ newpage=1; next; }
 /^INTERNET-DRAFT.+[0-9]+$/	{ newpage=1; next; }
-/^[^ \t]/		{ sentence=1; }
-/./			{
-			   if (newpage) {
-			      if (sentence) {
-			         outline++; print "";
-			      }
-			   } else {
-			      if (haveblank) {
-				  outline++; print "";
-			      }
-			   }
-			   haveblank=0;
-			   sentence=0;
-			   newpage=0;
-			}
-/[.:][ \t]*$/		{ sentence=1; }
-/^$/			{ haveblank=1; next; }
-			{ outline++; print; } 
+/^RFC.+[0-9]+$/			{ newpage=1; next; }
+/^[^ \t]/			{ sentence=1; }
+/./				{
+				   if (newpage) {
+				      if (sentence) {
+					 outline++; print "";
+				      }
+				   } else {
+				      if (haveblank) {
+					  outline++; print "";
+				      }
+				   }
+				   haveblank=0;
+				   sentence=0;
+				   newpage=0;
+				}
+/[.:][ \t]*$/			{ sentence=1; }
+/^$/				{ haveblank=1; next; }
+				{ outline++; print; } 
 ' $1
 }
 
@@ -308,8 +314,14 @@ END	{
 # ----------------------------------------------------------------------
 # Process options (Options are not used currently!)
 # ----------------------------------------------------------------------
+opthtml=1; optdiff=0; optchbars=0; optwdiff=0;
 while [ $# -gt 0 ]; do
    case "$1" in
+      --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0;;
+      --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0;;
+      --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0;;
+      --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1;;
+
       -r) options="$options $1 $2"; rev=$2; shift;;
       -*) options="$options $1" ;;
       *)  files="$files $1";;
@@ -324,7 +336,7 @@ set $files
 # working file copies
 # ----------------------------------------------------------------------
 
-if [ $# -eq 2 ]; then
+if [ $# -ge 2 ]; then
    if [ $1 = $2 ]; then
       echo The files are the same file
       exit
@@ -333,10 +345,10 @@ if [ $# -eq 2 ]; then
    mv $2 $2.orig
    base1=$(basename $1)
    base2=$(basename $2)
-   outfile=$(worddiff $base2 $base1 "%s%s-from-%s").chbar
-   htmlfile=$(worddiff $base2 $base1 "%s%s-from-%s").diff.html
+   outbase=$(worddiff $base2 $base1 "%s%s-from-%s")
 else
    echo "Usage: chbars file1 file2"
+   exit 1
 fi
 
 # ----------------------------------------------------------------------
@@ -347,19 +359,44 @@ fi
 strip $2.orig > $2
 strip $1.orig > $1
 
+
+# ----------------------------------------------------------------------
+# Get output file name
+# ----------------------------------------------------------------------
+if [ "$3" ]; then
+  outfile=$3
+else
+    if [ $opthtml -gt 0 ]; then
+      outfile=$outbase.diff.html
+    fi
+    if [ $optchbars -gt 0 ]; then
+      outfile=$outbase.chbar
+    fi
+    if [ $optdiff -gt 0 ]; then
+      outfile=$outbase.diff
+    fi
+fi
+
 # ----------------------------------------------------------------------
 # Do diff
 # ----------------------------------------------------------------------
 if cmp $1 $2 >/dev/null; then
    echo Files are identical
 else
-    diff -ubBw -10000 $1 $2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $outfile
-    diff -ubBw -$prelines $1 $2 | htmldiff > $htmlfile
-    echo "  Changebar text was output to $outfile,"
-    echo "  html diff to $htmlfile"
+   if [ $opthtml -gt 0 ]; then
+      diff -ubBwd -$prelines $1 $2 | htmldiff > $outfile
+   fi
+   if [ $optchbars -gt 0 ]; then
+      diff -ubBwd -10000 $1 $2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $outfile
+   fi
+   if [ $optdiff -gt 0 ]; then
+      diff -ubBwd -$prelines $1 $2 | htmldiff > $outfile
+   fi
+   if [ $optwdiff -gt 0 ]; then
+      wdiff -a $1 $2 
+   fi
 fi
 
 if [ -f $1.orig ]; then mv $1.orig $1; fi
 if [ -f $2.orig ]; then mv $2.orig $2; fi
-
-rm $pagecache
+if [ -f $pagecache ]; then rm $pagecache; fi
