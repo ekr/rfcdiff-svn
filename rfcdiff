@@ -39,7 +39,7 @@
 #	 2 Feb 2003	- Expanded to also provide side-by-side html diff
 #
 
-version="0.24"
+version="0.25"
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -51,6 +51,7 @@ strip() {
 /\[Page [0-9]+\]$/	{ next; }
 /^\f/			{ next; }
 /^Internet-Draft.+[0-9]+$/	{ newpage=1; next; }
+/^INTERNET-DRAFT.+[0-9]+$/	{ newpage=1; next; }
 /^[^ \t]/		{ sentence=1; }
 /./			{
 			   if (newpage) {
