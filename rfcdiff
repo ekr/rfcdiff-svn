@@ -1,0 +1,141 @@
+#!/bin/sh
+#
+#	Show changes between 2 internet-drafts using changebars
+#
+#       -----------------------------------------------------------------
+#
+#	Copyright 2002 Henrik Levkowetz
+#
+#	This program is free software; you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation; either version 2 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program; if not, write to the Free Software
+#	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+#       -----------------------------------------------------------------
+#
+#	The purpose of this program is to compare two versions of an
+#	internet-draft, and as output produce a text file which
+#	contains the text of the second draft, with changebars in the
+#	left margin which indicates the lines which have changed from
+#	the first draft.
+#
+#	It is called as
+#
+#		chbars first-file second-file
+#
+
+strip() {
+  awk '
+			{ gsub(/\r/, ""); }
+			
+/\[Page [0-9]+\]$/	{ next; }
+/^\f/			{ next; }
+/^Internet-Draft/	{ newpage=1; next; }
+/^[^ \t]/		{ sentence=1; }
+/./			{
+			   if (newpage) {
+			      if (sentence) {
+			         print "";
+			      }
+			   } else {
+			      if (haveblank) {
+			         print "";
+			      }
+			   }
+			   haveblank=0;
+			   sentence=0;
+			   newpage=0;
+			}
+/[.:][ \t]*$/		{ sentence=1; }
+/^$/			{ haveblank=1; next; }
+			{ print; } 
+' $1
+}
+
+worddiff() {
+   awk '
+BEGIN	{
+		w1 = ARGV[1]
+		w2 = ARGV[2]
+
+		do {
+			if (substr(w1,1,1) == substr(w2,1,1)) {
+				w1 = substr(w1,2)	
+				w2 = substr(w2,2)	
+			} else {
+				break;
+			}
+			prefixlen++;
+		} while (length(w1) && length(w2))
+
+		prefix = substr(ARGV[1],1,prefixlen);
+
+		do {
+			l1 = length(w1);
+			l2 = length(w2);
+			if (substr(w1,l1,1) == substr(w2,l2,1)) {
+				w1 = substr(w1,1,l1-1)	
+				w2 = substr(w2,1,l2-1)	
+			} else {
+				break;
+			}
+		} while (l1 && l2)
+
+		printf "%s%s..%s\n", prefix, w1, w2;
+	}
+' $1 $2
+}
+
+tempfile="chbars-$$"
+
+while [ $# -gt 0 ]; do
+   case "$1" in
+      -r) options="$options $1 $2"; rev=$2; shift;;
+      -*) options="$options $1" ;;
+      *)  files="$files $1";;
+   esac
+   shift
+done
+
+set $files
+
+if   [ $# -eq 1 ]; then
+   mv $1 $1.curr
+   cvs up -p $options $1 > $tempfile.prev 2>/dev/null
+   mv $1.curr $1
+   cp $1 $tempfile.curr
+   outfile=changes-$rev.txt
+elif [ $# -eq 2 ]; then
+    cp $1 $tempfile.prev
+    cp $2 $tempfile.curr
+    base1=$(basename $1)
+    base2=$(basename $2)
+    outfile=changes-$(worddiff $base1 $base2).txt
+else
+   echo "Usage: chbars [cvs up options] file1 [file2]"
+fi
+
+strip $tempfile.prev > $tempfile.prev.stripped
+strip $tempfile.curr > $tempfile.curr.stripped
+
+rm $tempfile.curr
+rm $tempfile.prev
+
+if cmp $tempfile.prev.stripped $tempfile.curr.stripped >/dev/null; then
+    echo Files are identical
+else
+    diff -ubBw -10000 $tempfile.prev.stripped $tempfile.curr.stripped | grep -v \.."^-" | tail +3 | sed 's/^+/|/' > $outfile
+    echo "Changebar text was output to $outfile"
+fi
+
+rm $tempfile.prev.stripped
+rm $tempfile.curr.stripped
