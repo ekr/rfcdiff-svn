@@ -1,69 +1,69 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Synopsis:
 #	Show changes between 2 internet-drafts using changebars or html
 #	side-by-side diff.
-#
+#	
 # Usage:
 #	rfcdiff [options] file1 file2
-#
+#	
 #	rfcdiff takes two RFCs or Internet-Drafts in text form as input, and
 #	produces output which indicates the differences found in one of various
 #	forms, controlled by the options listed below. In all cases, page
 #	headers and page footers are stripped before looking for changes.
-#
+#	
 #	--html		Produce side-by-side .html diff (default)
-#
+#	
 #	--chbars	Produce changebar marked .txt output
-#
+#	
 #	--diff		Produce a regular diff output
-#
+#	
 #	--wdiff		Produce paged wdiff output
-#
+#	
 #	--browse	Show html output in browser
-#
+#	
 #	--keep		Don't delete temporary workfiles
-#
+#	
 #	--version	Show version
-#
+#	
 #	--help		Show this help
-#
+#	
 #	--info "Synopsis|Usage|Copyright|Description|Log"
 #			Show various info
-#
+#	
 #	--width	N	Set a maximum width of N characters for the
 #			display of each half of the old/new html diff
-#
+#	
 #	--linenum	Show linenumbers for each line, not only at the
 #			start of each change section
-#
+#	
 #	--body		Strip document preamble (title, boilerplate and
 #			table of contents) and postamble (Intellectual
 #			Property Statement, Disclaimer etc)
-#
+#	
 #	--nostrip	Don't strip headers and footers (or body)
-#
+#	
 #	--ab-diff	Before/After diff, suitable for rfc-editor
 #	--abdiff
-#
+#	
 #	--stdout	Send output to stdout instead to a file
-#
+#	
 #
 # Copyright:
 #	-----------------------------------------------------------------
-#
+#	
 #	Copyright 2002 Henrik Levkowetz
-#
+#	
 #	This program is free software; you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
 #	the Free Software Foundation; either version 2 of the License, or
 #	(at your option) any later version.
-#
+#	
 #	This program is distributed in the hope that it will be useful,
 #	but WITHOUT ANY WARRANTY; without even the implied warranty of
 #	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #	GNU General Public License for more details.
-#
+#	
 #	You should have received a copy of the GNU General Public License
 #	along with this program; if not, write to the Free Software
 #	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -75,150 +75,160 @@
 #	The purpose of this program is to compare two versions of an
 #	internet-draft, and as output produce a diff in one of several
 #	formats:
-#
+#	
 #		- side-by-side html diff
 #		- paged wdiff output in a text terminal
 #		- a text file with changebars in the left margin
 #		- a simple unified diff output
-#
+#	
 #	In all cases, internet-draft headers and footers are stripped before
 #	generating the diff, to produce a cleaner diff.
-#
+#	
 #	It is called as
-#
+#	
 #		rfcdiff first-file second-file
-#
+#	
 #	The latest version is available from
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
 #
+#	02 Dec 2004	v1.18 - On some systems, awk is the original		
+#			Aho, Weinberger, Kernighan awk. We need gawk
+#			or at least nawk, so now we look for those.
+#			If not found, we try to run with awk anyway,
+#			but that will probably not work...
+#			Nawk won't accept continuation lines inside
+#			strings, so all multiline strings broken up.
+#			Also changed the linebreaking and page 
+#			formatting somewhat.
+#			
 #	16 Nov 2004	v1.17 - Minor bugfix for cygwin - "cd -" was
 #			reported not to work; working around that.
-#
+#	
 #	10 Nov 2004	v1.16 - Minor bugfix - properly removing temp
 #			outfile when using --stdout
-#
+#	
 #	20 Sep 2004	v1.15 - Improved the page header/footer
 #			stripping to handle more cases of paragraphs
 #			split over page breaks, and a greater variety
 #			of whitespace in the page break.  Added some
 #			diagnostic information to the generated html
 #			diff, in comments.  Added --stdout option.
-#
+#	
 #	04 Sep 2004	v1.14 - Cleaned up html in a few places so it's
 #			now clean again.
-#
+#	
 #	11 Jun 2004	v1.13 - Tweaked the regexp to match section
 #			numbers slightly.  Added -wd option to diff
 #			also for the ab (rfc-editor before/after) diff.
-#
+#	
 #	07 Jun 2004	v1.12 - Added --abdiff option, to produce
 #			OLD/NEW output suitable for the RFC-Editor
-#
+#	
 #	03 Apr 2004	v1.11 - Added --nostrip option.  Fixed a bug
 #			where a diff on the very first line would not
 #			be shown.
-#
+#	
 #	17 Mar 2004	v1.10 - Minor tweaks to handle malformed drafts
 #			better.  Added firefox to browser list.
-#
+#	
 #	23 Feb 2004	v1.09 - Started work on an Old/New diff mode,
 #			suitable for diff summaries to mailing lists,
 #			issue trackers, reviewers & rfc-editor.  Not
 #			complete yet.
-#
+#	
 #	22 Feb 2004	v1.08 - Added --body option to exclude
 #			boilerplate and table of contents changes.
-#
+#	
 #	21 Feb 2004	v1.07 - Added diagnostic message when wdiff not
 #			found or wdiff version not recognised
-#
+#	
 #	01 Feb 2004	v1.06 - Added --linenum option to provide line numbers
 #			on each line. Simplified linebreaking markup.
 #			Some mild refactoring.
-#
+#	
 #	29 Jan 2004	v1.05 - Now providing page and line numbers for
 #			both old and new document versions at the start
 #			of each change section.
 #			The line-breaking code is still buggy...
-#
+#	
 #	25 Jan 2004	v1.04 - Added line numbers for the case when no page
 #			numbers are available
-#
+#	
 #	24 Jan 2004	v1.03 - Fixed a line coloring bug introduced in v1.02
-#
+#	
 #	22 Jan 2004	v1.02 - Added line-breaking functionality through
 #			the --width option.  Experimental -- may be
 #			buggy.
-#
+#	
 #	17 Dec 2003	v1.01 - Fixed a bug where diffs with no text
 #			occurring after the last change would be shown
 #			without the last change. Added some debug
 #			functionality to be able to track this one down.
-#
+#	
 #	14 Dec 2003	v1.00 - Bumped version number to 1.00
-#
+#	
 #	 6 Dec 2003	v0.42 - Added html diff output for the
 #			identical files case.
-#
+#	
 #	 5 Dec 2003	v0.41 - Added --info option
-#
+#	
 #	25 Nov 2003	v0.40 - Added the use of wget (if available) to
 #			pull down remote source files (http: or ftp:)
-#
+#	
 #	20 Nov 2003	v0.39 - Added 'End of changes' line at the end
 #			of html diff. Added a test on wdiff producing
 #			reasonable output with --version option, to
 #			avoid old broken wdiff versions.
-#
+#	
 #	20 Nov 2003	v0.38 - Added --keep option, to keep temporary
 #			files.
-#
+#	
 #	20 Nov 2003	v0.37 - Added --nowdiff option, to make --html
 #			*not* use wdiff even if it is available.
-#
+#	
 #	20 Nov 2003	v0.36 - Added --browse option, to optionally
 #			start a browser to show html diff output.
 #			Refined how we look for a wdiff binary.
-#
+#	
 #	18 Nov 2003	v0.35 - minor tweaks to header/footer stripping
 #			regexps. Changed color marking of differences.
 #			Other minor tweaks and comment updates.
-#
+#	
 #	16 Nov 2003	v0.34 - removed listing of environment when no
 #			files were given on the command line. Added
 #			help text. Added the possibility of using wdiff to get
 #			the changed words in a change block highlighted.
-#
+#	
 #	23 Oct 2003	v0.33 - using different dir's for the stripped
 #			files, to be able to diff files with the same
 #			basename.
-#
+#	
 #	 2 Sep 2003	v0.32 - fixed spurious error message when using
 #			--wdiff option
-#
+#	
 #	 1 Sep 2003	v0.31 - not touching the original files, using
 #			temporary directory for work files.
-#
+#	
 #	29 Aug 2003	v0.30 - Removed explicit font size for output.
 #			Changed regexp for page start (now accepting space
 #			in "Internet Draft".
-#
+#	
 #	16 Apr 2003	v0.29 - added wdiff support
-#
+#	
 #	 6 Mar 2003	v0.28 - added --html, --chbars and --diff switches
-#
+#	
 #	 3 Mar 2003	v0.27 - Changed page regexp to accept lowercase
 #				'p'.
-#
+#	
 #	 2 Feb 2003	Expanded to provide side-by-side html diff, in
 #			addition to changebars in .txt files
 #
 # End:
 #
 
-export version="1.17"
+export version="1.18"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -226,10 +236,27 @@ export pagecache1="$workdir/pagecache1"
 export pagecache2="$workdir/pagecache2"
 
 # ----------------------------------------------------------------------
+# Utility to find an executable
+# ----------------------------------------------------------------------
+lookfor() {
+    for b in "$@"; do
+	found=$(which "$b" 2>/dev/null)
+	if [ -n "$found" ]; then
+	    if [ -x "$found" ]; then
+		echo "$found"
+		return
+	    fi
+	fi
+    done
+}
+
+AWK=$(lookfor gawk nawk awk)
+
+# ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
 # ----------------------------------------------------------------------
 strip() {
-  awk '
+  $AWK '
 				{ gsub(/\r/, ""); }
 				{ gsub(/[ \t]+$/, ""); }
 
@@ -270,7 +297,7 @@ strip() {
 # postamble (Intellectual Property Statement, Disclaimer etc)
 # ----------------------------------------------------------------------
 bodystrip() {
-    awk '
+    $AWK '
     /^[ \t]*Acknowledgment/		{ inbody = 0; }
     /^[ \t]*Copyright Statement/	{ inbody = 0; }
     /^[ \t]*Disclaimer of Validid/	{ inbody = 0; }
@@ -286,7 +313,7 @@ bodystrip() {
 # From two words, find common prefix and differing part, join descriptively
 # ----------------------------------------------------------------------
 worddiff() {
-   awk '
+   $AWK '
 BEGIN	{
 		w1 = ARGV[1]
 		w2 = ARGV[2]
@@ -326,7 +353,7 @@ BEGIN	{
 # Generate a html page with side-by-side diff from a unified diff
 # ----------------------------------------------------------------------
 htmldiff() {
-   awk '
+   $AWK '
 BEGIN	{
            FS = "[ \t,]";
 
@@ -361,48 +388,48 @@ BEGIN	{
 	}
 
 function header(file1, file2) {
-   printf "\
-<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \n\
-<!-- Generated by rfcdiff %s: rfcdiff %s --> \n\
-<!-- System: %s --> \n\
-<!-- Using awk: %s: %s --> \n\
-<!-- Using diff: %s: %s --> \n\
-<!-- Using wdiff: %s: %s --> \n\
-<html> \n\
-<head> \n\
-  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\" /> \n\
-  <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" /> \n\
-  <title>Diff: %s - %s</title> \n\
-  <style type=\"text/css\"> \n\
-    body    { margin: 0.4ex; } \n\
-    tr      { } \n\
-    td      { white-space: pre; font-family: monospace; } \n\
-    th      { font-size: 11pt; } \n\
-    .small  { font-size: 8pt; } \n\
-    .left   { background-color: #EEE; } \n\
-    .right  { background-color: #FFF; } \n\
-    .diff   { background-color: lightblue; } \n\
-    .lblock { background-color: #BFB; } \n\
-    .rblock { background-color: #FF8; } \n\
-    .insert { background-color: cyan; } \n\
-    .delete { background-color: #ACF; } \n\
-    .void   { background-color: lightyellow; } \n\
-    .cont   { background-color: #EEE; } \n\
-    .linebr { background-color: #AAA; } \n\
-    .lineno { color: red; background-color: #FFF; font-size: 8pt; text-align: right; padding: 0 2px; } \n\
-    .elipsis{ background-color: #AAA; } \n\
-    .left .cont { background-color: #DDD; } \n\
-    .right .cont { background-color: #EEE; } \n\
-    .lblock .cont { background-color: #9D9; } \n\
-    .rblock .cont { background-color: #DD6; } \n\
-    .insert .cont { background-color: #0DD; } \n\
-    .delete .cont { background-color: #8AD; } \n\
-  </style> \n\
-</head> \n\
-<body > \n\
-  <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"> \n\
-  <tr bgcolor=\"orange\"><th></th><th>&nbsp;%s&nbsp;</th><th> </th><th>&nbsp;%s&nbsp;</th><th></th></tr> \n\
-", ENVIRON["version"], ENVIRON["cmdline"], ENVIRON["uname"], ENVIRON["awkbin"], ENVIRON["awkver"], ENVIRON["diffbin"], ENVIRON["diffver"], ENVIRON["wdiffbin"], ENVIRON["wdiffver"], file1, file2, file1, file2;
+   printf "" \
+"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \n" \
+"<!-- Generated by rfcdiff %s: rfcdiff %s --> \n" \
+"<!-- System: %s --> \n" \
+"<!-- Using awk: %s: %s --> \n" \
+"<!-- Using diff: %s: %s --> \n" \
+"<!-- Using wdiff: %s: %s --> \n" \
+"<html> \n" \
+"<head> \n" \
+"  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\" /> \n" \
+"  <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" /> \n" \
+"  <title>Diff: %s - %s</title> \n" \
+"  <style type=\"text/css\"> \n" \
+"    body    { margin: 0.4ex; margin-right: auto; } \n" \
+"    tr      { } \n" \
+"    td      { white-space: pre; font-family: monospace; } \n" \
+"    th      { font-size: 11pt; } \n" \
+"    .small  { font-size: 8pt; } \n" \
+"    .left   { background-color: #EEE; } \n" \
+"    .right  { background-color: #FFF; } \n" \
+"    .diff   { background-color: lightblue; } \n" \
+"    .lblock { background-color: #BFB; } \n" \
+"    .rblock { background-color: #FF8; } \n" \
+"    .insert { background-color: cyan; } \n" \
+"    .delete { background-color: #ACF; } \n" \
+"    .void   { background-color: lightyellow; } \n" \
+"    .cont   { background-color: #EEE; } \n" \
+"    .linebr { background-color: #AAA; } \n" \
+"    .lineno { color: red; background-color: #FFF; font-size: 8pt; text-align: right; padding: 0 2px; } \n" \
+"    .elipsis{ background-color: #AAA; } \n" \
+"    .left .cont { background-color: #DDD; } \n" \
+"    .right .cont { background-color: #EEE; } \n" \
+"    .lblock .cont { background-color: #9D9; } \n" \
+"    .rblock .cont { background-color: #DD6; } \n" \
+"    .insert .cont { background-color: #0DD; } \n" \
+"    .delete .cont { background-color: #8AD; } \n" \
+"  </style> \n" \
+"</head> \n" \
+"<body > \n" \
+"  <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"> \n" \
+"  <tr bgcolor=\"orange\"><th></th><th>&nbsp;%s&nbsp;</th><th> </th><th>&nbsp;%s&nbsp;</th><th></th></tr> \n" \
+"", ENVIRON["version"], ENVIRON["cmdline"], ENVIRON["uname"], ENVIRON["awkbin"], ENVIRON["awkver"], ENVIRON["diffbin"], ENVIRON["diffver"], ENVIRON["wdiffbin"], ENVIRON["wdiffver"], file1, file2, file1, file2;
 }
 
 function worddiff(w1, w2) {
@@ -448,7 +475,10 @@ function numdisplay(which, line) {
 }
 
 function fixesc(line) {
-    return gensub(/&(<[^>]*>)/, "\\1\\&", "g", line);
+#    Making this a no-op for now -- the change in line-breaking
+#    "<br><span...>" => "\n" should make this less necessary.
+#    line = gensub(/&(<[^>]*>)/, "\\1\\&", "g", line);
+    return line;
 }
 
 function chunkdiff() {
@@ -563,13 +593,13 @@ function maybebreakline(line,    width) {
 	line = expandtabs(line);
 
 	if (length(line) > width) {
-	    new = htmlesc(substr(line, 0, width)) "<br/><span class=\"cont\">";
+	    new = htmlesc(substr(line, 0, width)) "\n";
 	    old = substr(line, width+1);
 	    while (length(old) > width) {
-		new = new htmlesc(substr(old, 0, width)) "<br/>";
+		new = new htmlesc(substr(old, 0, width)) "\n";
 		old = substr(old, width+1);
 	    }
-	    line = new htmlesc(old) "</span>";
+	    line = new htmlesc(old) ;
 	} else {
 	    line = htmlesc(line);
 	}
@@ -634,13 +664,13 @@ function maybebreakline(line,    width) {
 
 END	{
 	   flush();
-	   printf("\n\
-     <tr><td></td><td class=\"left\"></td><td> </td><td class=\"right\"></td><td></td></tr>\n\
-     <tr bgcolor=\"gray\"><th colspan=\"5\" align=\"center\"><a name=\"end\">&nbsp;%s&nbsp;</a></th></tr>\n\
-     <tr><td colspan=\"5\" align=\"center\"><br/><small><small><i>This html diff was produced by rfcdiff %s, available from <a href=\"http://www.levkowetz.com/ietf/tools/rfcdiff/\">http://www.levkowetz.com/ietf/tools/rfcdiff/</a></i></small></small></td></tr>\n\
-   </table>\n\
-   </body>\n\
-   </html>\n", diffnum?"End of changes.":"No changes.", ENVIRON["version"]);
+	   printf("\n" \
+"     <tr><td></td><td class=\"left\"></td><td> </td><td class=\"right\"></td><td></td></tr>\n" \
+"     <tr bgcolor=\"gray\"><th colspan=\"5\" align=\"center\"><a name=\"end\">&nbsp;%s&nbsp;</a></th></tr>\n" \
+"     <tr><td colspan=\"5\" align=\"center\"><br/><small><small><i>This html diff was produced by rfcdiff %s, available from <a href=\"http://www.levkowetz.com/ietf/tools/rfcdiff/\" >http://www.levkowetz.com/ietf/tools/rfcdiff/</a> </i></small></small></td></tr>\n" \
+"   </table>\n" \
+"   </body>\n" \
+"   </html>\n", diffnum?"End of changes.":"No changes.", ENVIRON["version"]);
 	}
 ' $1
 }
@@ -649,7 +679,7 @@ END	{
 # Generate before/after text output from a context diff
 # ----------------------------------------------------------------------
 abdiff() {
-awk '
+$AWK '
 BEGIN	{
 	   # Read pagecache1
 	   maxpage[1] = 1
@@ -720,25 +750,10 @@ BEGIN	{
 
 
 # ----------------------------------------------------------------------
-# Utility to find an executable
-# ----------------------------------------------------------------------
-lookfor() {
-    for b in "$@"; do
-	found=$(which "$b" 2>/dev/null)
-	if [ -n "$found" ]; then
-	    if [ -x "$found" ]; then
-		echo "$found"
-		return
-	    fi
-	fi
-    done
-}
-
-# ----------------------------------------------------------------------
 # Utility to extract keyword info
 # ----------------------------------------------------------------------
 extract() {
-    awk -v keyword=$1 '
+    $AWK -v keyword=$1 '
 	BEGIN {
 	    # print "Keyword", keyword;
 	}
@@ -983,9 +998,9 @@ fi
 # ----------------------------------------------------------------------
 uname=$(uname -a)
 export uname
-awkbin=$(lookfor awk)
+awkbin=$AWK
 export awkbin
-awkver=$(awk --version | head -n 1)
+awkver=$($AWK --version | head -n 1)
 export awkver
 diffbin=$(lookfor diff)
 export diffbin
