@@ -41,7 +41,11 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 #
-#	20 Nov 2003	v0.37 Added --nowdiff option
+#	20 Nov 2003	v0.38 - Added --keep option, to keep temporary
+#			files.
+#
+#	20 Nov 2003	v0.37 - Added --nowdiff option, to make --html
+#			*not* use wdiff even if it is available.
 #
 #	20 Nov 2003	v0.36 - Added --browse option, to optionally
 #			start a browser to show html diff output.
@@ -81,7 +85,7 @@
 #			addition to changebars in .txt files
 #	
 
-export version="v0.37"
+export version="v0.38"
 export pagecache="/tmp/pagecache-$$"
 export prelines="10"
 export basename=$(basename $0)
@@ -445,19 +449,23 @@ die() {
 # Process options
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
+optkeep=0;
+
 while [ $# -gt 0 ]; do
    case "$1" in
       --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0;;
       --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0;;
       --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0;;
       --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1;;
-      --version)echo "rfcchbars $version"; exit 0;;
+      --version)echo "$basename $version"; exit 0;;
       --browse) optshow=1;;
-      --nowdiff) optnowdiff=1;;
+      --nowdiff)optnowdiff=1;;
+      --keep)	optkeep=1;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
-      -v) echo "rfcchbars $version"; exit 0;;
-      -*) options="$options $1" ;;
+      -v) echo "$basename $version"; exit 0;;
+      -*) echo "Unrecognized option: $1";
+	  exit 1;;
       *)  files="$files $1";;
    esac
    shift
@@ -495,6 +503,7 @@ stripped before looking for changes.
 --wdiff		Produce paged wdiff output
 
 --browse	Show html output in browser
+--keep		Don't delete temporary workfiles
 "
    exit 1
 fi
@@ -564,14 +573,19 @@ else
       wdiff -a 1/$base1 2/$base2 
    fi
 fi
-rm 1/$base1 2/$base2
 cd -
 
 if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
-if [ -f $pagecache ]; then rm $pagecache; fi
-rm -fr $workdir/1
-rm -fr $workdir/2
-rmdir $workdir
+
+if [ $optkeep -eq 0 ]; then
+   if [ -f $pagecache ]; then rm $pagecache; fi
+   rm -fr $workdir/1
+   rm -fr $workdir/2
+   rmdir $workdir
+else
+   echo "
+   Temporary workfiles have been left in $workdir/"
+fi
 
 if [ $optshow -gt 0 ]; then
    browse $outfile
