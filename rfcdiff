@@ -93,6 +93,9 @@
 #
 # Log:
 #			
+#	24 Jan 2005	v1.23 - Fixed a bug where html entity codes was
+#			broken up by diff markup.
+#			
 #	06 Jan 2005	v1.22 - Tweaked a style setting	
 #			
 #	10 Dec 2004	v1.21 - Added anchor for each diff, in order	
@@ -241,7 +244,8 @@
 # End:
 #
 
-export version="1.22"
+export version="1.23"
+export progdate="(24 Jan 2005)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -492,6 +496,15 @@ function fixesc(line) {
 #    Making this a no-op for now -- the change in line-breaking
 #    "<br><span...>" => "\n" should make this less necessary.
 #    line = gensub(/&(<[^>]*>)/, "\\1\\&", "g", line);
+
+#   We still have to handle cases where we have a broken up "&lt;" / "&gt;"
+    gsub(/&l<\/span>t;/, "\\&lt;</span>", line);
+    gsub(/&g<\/span>t;/, "\\&gt;</span>", line);
+    gsub(/&<span class="delete">l<\/span>t;/, "<span class=\"delete\">\\&lt;</span>", line);
+    gsub(/&<span class="delete">g<\/span>t;/, "<span class=\"delete\">\\&gt;</span>", line);
+    gsub(/&<span class="insert">l<\/span>t;/, "<span class=\"insert\">\\&lt;</span>", line);
+    gsub(/&<span class="insert">g<\/span>t;/, "<span class=\"insert\">\\&gt;</span>", line);
+
     return line;
 }
 
@@ -852,7 +865,7 @@ while [ $# -gt 0 ]; do
       --abdiff)	opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
       --ab-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
       --rfc-editor-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
-      --version)echo -e "$basename\t$version"; exit 0;;
+      --version)echo -e "$basename\t$version\t$progdate"; exit 0;;
       --browse) optshow=1;;
       --nowdiff)optnowdiff=1;;
       --keep)	optkeep=1;;
