@@ -92,8 +92,12 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
+#			
+#	09 Dec 2004	v1.20 -	fixed the same bug again, a bit better
+#			this time :-)
+#			
 #	06 Dec 2004	v1.19 - fixed a bug introduced in v1.18, where	
-#			not lines of diffs with linebreaks would be
+#			lines of diffs with linebreaks would not be
 #			shown when using the --width option.
 #			
 #	02 Dec 2004	v1.18 - On some systems, awk is the original		
@@ -231,7 +235,7 @@
 # End:
 #
 
-export version="1.19"
+export version="1.20"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -406,7 +410,7 @@ function header(file1, file2) {
 "  <style type=\"text/css\"> \n" \
 "    body    { margin: 0.4ex; margin-right: auto; } \n" \
 "    tr      { } \n" \
-"    td      { white-space: pre; font-family: monospace; } \n" \
+"    td      { white-space: pre; font-family: monospace; vertical-align: top; } \n" \
 "    th      { font-size: 11pt; } \n" \
 "    .small  { font-size: 8pt; } \n" \
 "    .left   { background-color: #EEE; } \n" \
@@ -500,8 +504,10 @@ function chunkdiff() {
    cmd1 = sprintf("%s -n -2 -w \"<span class=\\\"delete\\\">\"  -x \"</span>\" %s %s", wdiff, chunkfile1, chunkfile2);
    cmd2 = sprintf("%s -n -1 -y \"<span class=\\\"insert\\\">\"  -z \"</span>\" %s %s", wdiff, chunkfile1, chunkfile2);
 
-   for (l = 0; l < difflines1; l++) { if (cmd1 | getline > 0) { stack1[l] = fixesc($0); }}
-   for (l = 0; l < difflines2; l++) { if (cmd2 | getline > 0) { stack2[l] = fixesc($0); }}
+   l=0; while (cmd1 | getline > 0) { stack1[l] = fixesc($0); l++; }
+   difflines1 = l;
+   l=0; while (cmd2 | getline > 0) { stack2[l] = fixesc($0); l++; }
+   difflines2 = l;
 
    close(cmd1);
    close(cmd2);
@@ -596,7 +602,7 @@ function maybebreakline(line,    width) {
     if (width > 0) {
 	line = expandtabs(line);
 	while (length(line) > width) {
-	    new = new htmlesc(substr(line, 0, width)) "\n";
+	    new = new htmlesc(substr(line, 1, width)) "\n";
 	    line = substr(line, width+1);
 	}
     }
@@ -645,18 +651,16 @@ function maybebreakline(line,    width) {
 /^-/	{
 	   line = substr($0, 2);
 	   line = maybebreakline(line);
-	   linecount = gsub(/\n/, "\n", line) + 1; # sick way of counting the number of "\n" in the string
 
 	   stack1[difflines1] = line;
-	   difflines1 += linecount;
+	   difflines1++;
 	}
 /^[+]/	{
 	   line = substr($0, 2);
 	   line = maybebreakline(line);
-	   linecount = gsub(/\n/, "\n", line) + 1;
 
 	   stack2[difflines2] = line;
-	   difflines2 += linecount;
+	   difflines2++;
 	}
 
 END	{
