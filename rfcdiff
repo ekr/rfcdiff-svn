@@ -40,6 +40,10 @@
 #	The latest version is avaialble from
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
+#
+#	25 Nov 2003	v0.40 - Added the use of wget (if available) to
+#			pull down remote source files (http: or ftp:)
+#
 #	20 Nov 2003	v0.39 - Added 'End of changes' line at the end
 #			of html diff. Added a test on wdiff producing
 #			reasonable output with --version option, to
@@ -89,11 +93,11 @@
 #			addition to changebars in .txt files
 #	
 
-export version="v0.39"
-export pagecache="/tmp/pagecache-$$"
+export version="v0.40"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
+export pagecache="$workdir/pagecache"
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -485,11 +489,9 @@ if [ "$files" ]; then
 fi
 if [ $# -ge 2 ]; then
    if [ $1 = $2 ]; then
-      echo The files are the same file
+      echo "The files are the same file"
       exit
    fi
-#   mv $1 $1.orig
-#   mv $2 $2.orig
    base1=$(basename $1)
    base2=$(basename $2)
    outbase=$(worddiff $base2 $base1 "%s%s-from-%s")
@@ -521,13 +523,33 @@ mkdir $workdir/1 || die "$0: Error: Failed to create temporary directory '$workd
 mkdir $workdir/2 || die "$0: Error: Failed to create temporary directory '$workdir/2'."
 
 # ----------------------------------------------------------------------
-# Strip headers/footers from both files
+# Strip headers/footers from both files, possibly after downloading
 # ----------------------------------------------------------------------
 
 # The last file we strip determines the page numbers for htmldiff
-strip $2 > $workdir/2/$base2
-strip $1 > $workdir/1/$base1
+wgetbin=$(lookfor wget)
+dowgetarg1=0
+dowgetarg2=0
 
+if [ -n "$wgetbin" ]; then
+   if [ ${1#http://} != $1 ]; then dowgetarg1=1; fi
+   if [ ${1#ftp://} != $1 ]; then dowgetarg1=1; fi
+
+   if [ ${2#http://} != $2 ]; then dowgetarg2=1; fi
+   if [ ${2#ftp://} != $2 ]; then dowgetarg2=1; fi
+fi
+
+if [ $dowgetarg2 -gt 0 ]; then
+   $wgetbin -nv -O - $2 | strip > $workdir/2/$base2
+else
+   strip $2 > $workdir/2/$base2
+fi
+
+if [ $dowgetarg1 -gt 0 ]; then
+   $wgetbin -nv -O - $1 | strip > $workdir/1/$base1
+else
+   strip $1 > $workdir/1/$base1
+fi
 
 # ----------------------------------------------------------------------
 # Get output file name
@@ -568,7 +590,8 @@ fi
 
 cd $workdir
 if cmp 1/$base1 2/$base2 >/dev/null; then
-   echo Files are identical
+   echo ""
+   echo "The files are identical."
 else
    if [ $opthtml -gt 0 ]; then
       diff -ubBwd -$prelines 1/$base1 2/$base2 | htmldiff > $tempout
@@ -582,10 +605,13 @@ else
    if [ $optwdiff -gt 0 ]; then
       wdiff -a 1/$base1 2/$base2 
    fi
-fi
-cd -
 
-if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
+   cd -; if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
+
+   if [ $optshow -gt 0 ]; then
+      browse $outfile
+   fi
+fi
 
 if [ $optkeep -eq 0 ]; then
    if [ -f $pagecache ]; then rm $pagecache; fi
@@ -597,7 +623,4 @@ else
    Temporary workfiles have been left in $workdir/"
 fi
 
-if [ $optshow -gt 0 ]; then
-   browse $outfile
-fi
 
