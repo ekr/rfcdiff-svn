@@ -38,8 +38,10 @@
 #		rfcdiff first-file second-file
 #
 #	The latest version is avaialble from
-#		http://www.levkowetz.com/ietf/
+#		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
+#
+#	20 Nov 2003	v0.37 Added --nowdiff option
 #
 #	20 Nov 2003	v0.36 - Added --browse option, to optionally
 #			start a browser to show html diff output.
@@ -79,7 +81,7 @@
 #			addition to changebars in .txt files
 #	
 
-export version="v0.36"
+export version="v0.37"
 export pagecache="/tmp/pagecache-$$"
 export prelines="10"
 export basename=$(basename $0)
@@ -442,7 +444,7 @@ die() {
 # ----------------------------------------------------------------------
 # Process options
 # ----------------------------------------------------------------------
-opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0;
+opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
 while [ $# -gt 0 ]; do
    case "$1" in
       --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0;;
@@ -451,6 +453,7 @@ while [ $# -gt 0 ]; do
       --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1;;
       --version)echo "rfcchbars $version"; exit 0;;
       --browse) optshow=1;;
+      --nowdiff) optnowdiff=1;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
       -v) echo "rfcchbars $version"; exit 0;;
@@ -536,7 +539,9 @@ fi
 # ----------------------------------------------------------------------
 # Check if we can use wdiff for block diffs
 # ----------------------------------------------------------------------
-export wdiffbin=$(lookfor wdiff)
+if [ $optnowdiff -eq 0 ]; then
+   export wdiffbin=$(lookfor wdiff)
+fi
 
 # ----------------------------------------------------------------------
 # Do diff
