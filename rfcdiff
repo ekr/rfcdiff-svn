@@ -32,11 +32,14 @@
 #
 #		chbars first-file second-file
 #
+#	The latest version is avaialble from
+#		http://www.levkowetz.com/ietf/
 #
-#	 2 Feb 2003 Expanded to also provide side-by-side html diff
+#
+#	 2 Feb 2003	- Expanded to also provide side-by-side html diff
 #
 
-version="0.22"
+version="0.23"
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -261,7 +264,7 @@ END	{
 }
 
 # ----------------------------------------------------------------------
-# Process options
+# Process options (Options are not used currently!)
 # ----------------------------------------------------------------------
 while [ $# -gt 0 ]; do
    case "$1" in
@@ -278,15 +281,8 @@ set $files
 # Maybe get one of the files from cvs. Determine output file name. Make
 # working file copies
 # ----------------------------------------------------------------------
-tempfile="chbars-$$"
 
-if   [ $# -eq 1 ]; then
-   mv $1 $1.curr
-   cvs up -p $options $1 > $tempfile.prev 2>/dev/null
-   mv $1.curr $1
-   cp $1 $tempfile.curr
-   outfile=changes-$rev.txt
-elif [ $# -eq 2 ]; then
+if [ $# -eq 2 ]; then
    if [ $1 = $2 ]; then
       echo The files are the same file
       exit
@@ -298,7 +294,7 @@ elif [ $# -eq 2 ]; then
    outfile=$(worddiff $base2 $base1 "%s%s-from-%s").chbar
    htmlfile=$(worddiff $base2 $base1 "%s%s-from-%s").diff.html
 else
-   echo "Usage: chbars [cvs up options] file1 [file2]"
+   echo "Usage: chbars file1 file2"
 fi
 
 # ----------------------------------------------------------------------
@@ -322,4 +318,3 @@ fi
 if [ -f $1.orig ]; then mv $1.orig $1; fi
 if [ -f $2.orig ]; then mv $2.orig $2; fi
 
-#rm $tempfile.diff
