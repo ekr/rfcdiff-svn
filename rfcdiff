@@ -37,6 +37,9 @@
 #		http://www.levkowetz.com/ietf/
 #
 #
+#	23 Oct 2003	v0.33 - using different dir's for the stripped
+#			files, to be able to diff files with the same
+#			basename. 
 #	 2 Sep 2003	v0.32 - fixed spurious error message when using
 #			--wdiff option
 #	 1 Sep 2003	v0.31 - not touching the original files, using
@@ -52,7 +55,7 @@
 #
 #	
 
-export version="v0.31"
+export version="v0.33"
 export pagecache="/tmp/pagecache-$$"
 export prelines="10"
 export workdir="/tmp/rfcchbars-$$"
@@ -354,7 +357,7 @@ set $files
 # Maybe get one of the files from cvs. Determine output file name. Make
 # working file copies
 # ----------------------------------------------------------------------
-set -x
+#set -x
 
 if [ $# -ge 2 ]; then
    if [ $1 = $2 ]; then
@@ -376,6 +379,8 @@ fi
 # create working directory.
 # ----------------------------------------------------------------------
 mkdir $workdir || die "$0: Error: Failed to create temporary directory '$workdir'."
+mkdir $workdir/1 || die "$0: Error: Failed to create temporary directory '$workdir/1'."
+mkdir $workdir/2 || die "$0: Error: Failed to create temporary directory '$workdir/2'."
 
 # ----------------------------------------------------------------------
 # Strip headers/footers from both files
@@ -383,8 +388,8 @@ mkdir $workdir || die "$0: Error: Failed to create temporary directory '$workdir
 
 
 # The last file we strip determines the page numbers for htmldiff
-strip $2 > $workdir/$base2
-strip $1 > $workdir/$base1
+strip $2 > $workdir/2/$base2
+strip $1 > $workdir/1/$base1
 
 
 # ----------------------------------------------------------------------
@@ -412,26 +417,29 @@ fi
 # ----------------------------------------------------------------------
 
 cd $workdir
-if cmp $base1 $base2 >/dev/null; then
+if cmp 1/$base1 2/$base2 >/dev/null; then
    echo Files are identical
 else
    if [ $opthtml -gt 0 ]; then
-      diff -ubBwd -$prelines $base1 $base2 | htmldiff > $tempout
+      diff -ubBwd -$prelines 1/$base1 2/$base2 | htmldiff > $tempout
    fi
    if [ $optchbars -gt 0 ]; then
-      diff -ubBwd -10000 $base1 $base2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
+      diff -ubBwd -10000 1/$base1 2/$base2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
    fi
    if [ $optdiff -gt 0 ]; then
-      diff -ubBwd -$prelines $base1 $base2 | htmldiff > $tempout
+      diff -ubBwd -$prelines 1/$base1 2/$base2 | htmldiff > $tempout
    fi
    if [ $optwdiff -gt 0 ]; then
-      wdiff -a $base1 $base2 
+      wdiff -a 1/$base1 2/$base2 
    fi
 fi
-rm $base1 $base2
+rm 1/$base1 2/$base2
 cd -
 
 if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
 if [ -f $pagecache ]; then rm $pagecache; fi
+rmdir $workdir/1
+rmdir $workdir/2
 rmdir $workdir
+
 
