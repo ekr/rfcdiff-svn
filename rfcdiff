@@ -93,6 +93,9 @@
 #
 # Log:
 #
+#	16 Nov 2004	v1.17 - Minor bugfix for cygwin - "cd -" was
+#			reported not to work; working around that.
+#
 #	10 Nov 2004	v1.16 - Minor bugfix - properly removing temp
 #			outfile when using --stdout
 #
@@ -215,7 +218,7 @@
 # End:
 #
 
-export version="1.16"
+export version="1.17"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -993,6 +996,7 @@ export diffver
 # Do diff
 # ----------------------------------------------------------------------
 
+origdir=$PWD
 cd $workdir
 if cmp 1/$base1 2/$base2 >/dev/null; then
    echo ""
@@ -1019,7 +1023,7 @@ if [ $optstdout -gt 0 ]; then
   cat $tempout
   rm  $tempout
 else
-  cd -; if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
+  cd $origdir; if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
 fi
 
 if [ $optshow -gt 0 ]; then
