@@ -43,6 +43,9 @@
 #
 #	--nostrip	Don't strip headers and footers (or body)
 #
+#	--ab-diff	Before/After diff, suitable for rfc-editor
+#	--abdiff
+#
 # Copyright:
 #	-----------------------------------------------------------------
 #
@@ -86,6 +89,9 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
+#
+#	07 Jun 2004	v1.12 - Added --abdiff option, to produce
+#			OLD/NEW output suitable for the RFC-Editor
 #
 #	03 Apr 2004	v1.11 - Added --nostrip option.  Fixed a bug
 #			where a diff on the very first line would not
@@ -189,7 +195,7 @@
 # End:
 #
 
-export version="1.11"
+export version="1.12"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -635,9 +641,51 @@ BEGIN	{
 	   base1 = ENVIRON["base1"]
 	   base2 = ENVIRON["base2"]
 
-	}
-	{   print; }
+	   section = "INTRODUCTION";
+	   para = 0;
 
+	}
+/^\+\+/ {
+	   next;
+	}
+/^\-\-/ {
+	   next;
+	}
+/^ Appendix ./	{
+	   section = $1 " " $2;
+	   para = 0;
+	}
+/^ ([0-9]+\.)+  /	{
+	   section = "Section " $1;
+	   para = 0;
+	}
+/^ ?$/	{
+	   if (inpara) {
+	      printf "\n%s, para. %s:\n", section, para;
+	      print "OLD:\n"
+	      print oldpara
+	      print "NEW:\n"
+	      print newpara
+	   }
+	   oldpara = "";
+	   newpara = "";
+	   para ++;
+	   inpara = 0
+	}
+/^ ./	{
+	   oldpara = oldpara $0 "\n"
+	   newpara = newpara $0 "\n"
+	}
+/^\-/	{
+	   sub(/^./, " ");
+	   oldpara = oldpara $0 "\n"
+	   inpara++;
+	}
+/^\+/	{
+	   sub(/^./, " ");
+	   newpara = newpara $0 "\n"
+	   inpara++;
+	}
 '
 }
 
@@ -743,6 +791,8 @@ while [ $# -gt 0 ]; do
       --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1; optabdiff=0;;
       --changes)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
       --abdiff)	opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
+      --ab-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
+      --rfc-editor-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
       --version)echo -e "$basename\t$version"; exit 0;;
       --browse) optshow=1;;
       --nowdiff)optnowdiff=1;;
@@ -916,7 +966,7 @@ if [ $optdiff -gt 0 ]; then
    diff -bBwd -u$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
 fi
 if [ $optabdiff -gt 0 ]; then
-   diff -bBwd 1/$base1 2/$base2 | tee $workdir/diff | abdiff
+   diff -u1000 1/$base1 2/$base2 | tee $workdir/diff | abdiff
 fi
 if [ $optwdiff -gt 0 ]; then
    wdiff -a 1/$base1 2/$base2
