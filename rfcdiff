@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-#	Show changes between 2 internet-drafts using changebars
+#	Show changes between 2 internet-drafts using changebars or html
+#	side-by-side diff.
 #
 #       -----------------------------------------------------------------
 #
@@ -36,6 +37,8 @@
 #		http://www.levkowetz.com/ietf/
 #
 #
+#	 2 Sep 2003	v0.32 - fixed spurious error message when using
+#			--wdiff option
 #	 1 Sep 2003	v0.31 - not touching the original files, using
 #			temporary directory for work files.
 #	29 Aug 2003	Removed explicit font size for output. Changed
@@ -335,8 +338,10 @@ while [ $# -gt 0 ]; do
       --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0;;
       --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0;;
       --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1;;
+      --version)echo "rfcchbars $version"; exit 0;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
+      -v) echo "rfcchbars $version"; exit 0;;
       -*) options="$options $1" ;;
       *)  files="$files $1";;
    esac
@@ -349,7 +354,7 @@ set $files
 # Maybe get one of the files from cvs. Determine output file name. Make
 # working file copies
 # ----------------------------------------------------------------------
-#set -x
+set -x
 
 if [ $# -ge 2 ]; then
    if [ $1 = $2 ]; then
@@ -398,7 +403,9 @@ else
       outfile=$outbase.diff
     fi
 fi
-tempout=$(basename $outfile)
+if [ "$outfile" ]; then
+   tempout=$(basename $outfile)
+fi
 
 # ----------------------------------------------------------------------
 # Do diff
