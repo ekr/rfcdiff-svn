@@ -40,6 +40,10 @@
 #	The latest version is avaialble from
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
+#	20 Nov 2003	v0.39 - Added 'End of changes' line at the end
+#			of html diff. Added a test on wdiff producing
+#			reasonable output with --version option, to
+#			avoid old broken wdiff versions.
 #
 #	20 Nov 2003	v0.38 - Added --keep option, to keep temporary
 #			files.
@@ -85,7 +89,7 @@
 #			addition to changebars in .txt files
 #	
 
-export version="v0.38"
+export version="v0.39"
 export pagecache="/tmp/pagecache-$$"
 export prelines="10"
 export basename=$(basename $0)
@@ -271,8 +275,8 @@ function chunkdiff() {
    cmd1 = sprintf("%s -n -2 -w \"<span class=\\\"delete\\\">\"  -x \"</span>\" %s %s", wdiff, chunkfile1, chunkfile2);
    cmd2 = sprintf("%s -n -1 -y \"<span class=\\\"insert\\\">\"  -z \"</span>\" %s %s", wdiff, chunkfile1, chunkfile2);
 
-   for (l = linenum; l < num1; l++) { cmd1 | getline; stack1[l] = $0; }
-   for (l = linenum; l < num2; l++) { cmd2 | getline; stack2[l] = $0; }
+   for (l = linenum; l < num1; l++) { if (cmd1 | getline > 0) { stack1[l] = $0; }}
+   for (l = linenum; l < num2; l++) { if (cmd2 | getline > 0) { stack2[l] = $0; }}
 
    close(cmd1);
    close(cmd2);
@@ -376,10 +380,10 @@ function getpageline(line, page) {
 
 END	{
 	   printf("\n\
-   </table><br />\n\
-   <center><small><small><i>This html diff was produced by rfcdiff %s, available from\n\
-     <a href=\"http://www.levkowetz.com/ietf/tools/rfcdiff/\">http://www.levkowetz.com/ietf/tools/rfcdiff/</a>\n\
-   </i></small></small></center>\n\
+     <tr><td class=\"left\"></td><td> </td><td class=\"right\"></td></tr>\n\
+     <tr bgcolor=\"gray\"><th colspan=\"3\" align=\"center\"><a name=\"end\">&nbsp;&nbsp;End of changes. </th></tr>\n\
+     <tr><td colspan=\"3\" align=\"center\"><br /><small><small><i>This html diff was produced by rfcdiff %s, available from <a href=\"http://www.levkowetz.com/ietf/tools/rfcdiff/\">http://www.levkowetz.com/ietf/tools/rfcdiff/</a></i></small></small></td></tr>\n\
+   </table>\n\
    </body>\n\
    </html>\n", ENVIRON["version"]);
 	}
@@ -549,7 +553,13 @@ fi
 # Check if we can use wdiff for block diffs
 # ----------------------------------------------------------------------
 if [ $optnowdiff -eq 0 ]; then
-   export wdiffbin=$(lookfor wdiff)
+   wdiffbin=$(lookfor wdiff)
+   if [ -n "$wdiffbin" ]; then
+      wdiffver=$($wdiffbin --version 2>/dev/null | grep "wdiff.\+[0-9]\.[0-9]")
+      if [ -z "$wdiffver" ]; then wdiffbin=""; fi
+   fi
+   export wdiffbin
+   #echo "Found wdiff at $wdiffbin"
 fi
 
 # ----------------------------------------------------------------------
