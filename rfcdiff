@@ -1,9 +1,32 @@
 #!/bin/sh
 #
+# Synopsis:
 #	Show changes between 2 internet-drafts using changebars or html
 #	side-by-side diff.
 #
-#       -----------------------------------------------------------------
+# Usage:
+#	rfcdiff [options] file1 file2
+#
+#	rfcdiff takes two RFCs or Internet-Drafts in text form as input, and produces
+#	output which indicates the differences found in one of various forms, controlled
+#	by the options listed below. In all cases, page headers and page footers are
+#	stripped before looking for changes.
+#
+#	--html		Produce side-by-side .html diff (default)
+#	--chbars	Produce changebar marked .txt output
+#	--diff		Produce a regular diff output
+#	--wdiff		Produce paged wdiff output
+#
+#	--browse	Show html output in browser
+#	--keep		Don't delete temporary workfiles
+#	
+#	--version	Show version
+#	--help		Show this help
+#	--info "Synopsis|Usage|Copyright|Description|Log"
+#			Show various info
+#
+# Copyright:
+#	-----------------------------------------------------------------
 #
 #	Copyright 2002 Henrik Levkowetz
 #
@@ -21,8 +44,9 @@
 #	along with this program; if not, write to the Free Software
 #	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-#       -----------------------------------------------------------------
+#	-----------------------------------------------------------------
 #
+# Description:
 #	The purpose of this program is to compare two versions of an
 #	internet-draft, and as output produce a diff in one of several
 #	formats:
@@ -40,7 +64,7 @@
 #	The latest version is avaialble from
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
-#
+# Log:
 #	25 Nov 2003	v0.40 - Added the use of wget (if available) to
 #			pull down remote source files (http: or ftp:)
 #
@@ -92,8 +116,10 @@
 #	 2 Feb 2003	Expanded to provide side-by-side html diff, in
 #			addition to changebars in .txt files
 #	
+# End:
+#	
 
-export version="v0.40"
+export version="v0.41"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -410,6 +436,32 @@ lookfor() {
 }
 
 # ----------------------------------------------------------------------
+# Utility to extract keyword info
+# ----------------------------------------------------------------------
+extract() {
+    awk -v keyword=$1 '
+	BEGIN {
+	    # print "Keyword", keyword;
+	}
+	/^# [A-Z]/ {
+	    # print "New key", $2;
+	    if ($2 == keyword ":" ) { output=1; } else { output=0; }
+	    # print "Output", output;
+	}
+	/^#\t/	{
+	    # print "Content", output, $0;
+	    if ( output ) {
+		sub(/^#/,"");
+		print;
+	    }
+	}
+	{
+	    next;
+	}
+
+    ' $2
+}
+# ----------------------------------------------------------------------
 # Utility to start a browser
 # ----------------------------------------------------------------------
 
@@ -457,7 +509,7 @@ die() {
 # Process options
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
-optkeep=0;
+optkeep=0; optinfo=0;
 
 while [ $# -gt 0 ]; do
    case "$1" in
@@ -469,6 +521,8 @@ while [ $# -gt 0 ]; do
       --browse) optshow=1;;
       --nowdiff)optnowdiff=1;;
       --keep)	optkeep=1;;
+      --info)	optinfo=1; keyword=$2; shift;;
+      --help)	optinfo=1; keyword="Usage";;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
       -v) echo "$basename $version"; exit 0;;
@@ -484,6 +538,10 @@ done
 # ----------------------------------------------------------------------
 #set -x
 
+if [ $optinfo -gt 0 ]; then
+   extract $keyword $0
+   exit
+fi
 if [ "$files" ]; then
   set $files
 fi
@@ -496,21 +554,7 @@ if [ $# -ge 2 ]; then
    base2=$(basename $2)
    outbase=$(worddiff $base2 $base1 "%s%s-from-%s")
 else
-   echo "usage: $basename [options] file1 file2
-
-$basename takes two RFCs or Internet-Drafts in text form as input, and produces
-output which indicates the differences found in one of various forms, controlled
-by the options listed below. In all cases, page headers and page footers are
-stripped before looking for changes.
-
---chbars	Produce changebar marked .txt output
---html		Produce side-by-side .html diff (default)
---diff		Produce a regular diff output
---wdiff		Produce paged wdiff output
-
---browse	Show html output in browser
---keep		Don't delete temporary workfiles
-"
+   extract Usage $0
    exit 1
 fi
 
