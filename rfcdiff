@@ -31,11 +31,15 @@
 #
 #	It is called as
 #
-#		chbars first-file second-file
+#		rfcdiff first-file second-file
 #
 #	The latest version is avaialble from
 #		http://www.levkowetz.com/ietf/
 #
+#
+#	18 Nov 2003	v0.35 - minor tweaks to header/footer stripping
+#			regexps. Changed color marking of differences.
+#			Other minor tweaks and comment updates.
 #
 #	16 Nov 2003	v0.34 - removed listing of environment when no
 #			files were given on the command line. Added
@@ -67,10 +71,11 @@
 #			addition to changebars in .txt files
 #	
 
-export version="v0.33"
+export version="v0.35"
 export pagecache="/tmp/pagecache-$$"
 export prelines="10"
-export workdir="/tmp/rfcchbars-$$"
+export basename=$(basename $0)
+export workdir="/tmp/$basename-$$"
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -79,14 +84,14 @@ strip() {
   awk '
 			{ gsub(/\r/, ""); }
 			
-/\[[Pp]age [0-9ivx]+\]$/	{
-					match($0, /\[[Pp]age [0-9ivx]+\]$/);
+/\[[Pp]age [0-9ivx]+\] *$/	{
+					match($0, /\[[Pp]age [0-9ivx]+\]/);
 					print substr($0, RSTART+6, RLENGTH-7), outline > ENVIRON["pagecache"]
 					next;
 				}
-/^\f/				{ next; }
-/^Internet.Draft.+[0-9]+$/	{ newpage=1; next; }
-/^INTERNET.DRAFT.+[0-9]+$/	{ newpage=1; next; }
+/^\f/				{ newpage=1; next; }
+/^Internet.Draft.+[0-9]+ *$/	{ newpage=1; next; }
+/^INTERNET.DRAFT.+[0-9]+ *$/	{ newpage=1; next; }
 /^RFC.+[0-9]+$/			{ newpage=1; next; }
 /^[^ \t]/			{ sentence=1; }
 /./				{
@@ -104,7 +109,7 @@ strip() {
 				   newpage=0;
 				}
 /[.:][ \t]*$/			{ sentence=1; }
-/^$/				{ haveblank=1; next; }
+/^[ \t]*$/			{ haveblank=1; next; }
 				{ outline++; print; } 
 ' $1
 }
@@ -191,10 +196,10 @@ th { font-size: 12pt; } \n\
 .left   { background-color: #EEE; } \n\
 .right  { background-color: #FFF; } \n\
 .diff   { background-color: lightblue; } \n\
-.lblock { background-color: #DDE; } \n\
-.rblock { background-color: #EEF; } \n\
-.insert { background-color: lightgreen; } \n\
-.delete { background-color: #FCC; } \n\
+.lblock { background-color: #BFB; } \n\
+.rblock { background-color: #FF8; } \n\
+.insert { background-color: cyan; } \n\
+.delete { background-color: #ACF; } \n\
 .void   { background-color: lightyellow; } \n\
 </style> \n\
 <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"> \
@@ -236,7 +241,7 @@ function worddiff(w1, w2) {
    wordpart[3] = suffix;
 }
 
-function chunkdiff(lclass, rclass) {
+function chunkdiff() {
    if (num1 == linenum && num2 == linenum) return;
    chunk++;
 
@@ -249,8 +254,8 @@ function chunkdiff(lclass, rclass) {
    close(chunkfile1);
    close(chunkfile2);
 
-   cmd1 = sprintf("wdiff -n -2 -w \"<span class=\\\"insert\\\">\"  -x \"</span>\" %s %s", chunkfile1, chunkfile2);
-   cmd2 = sprintf("wdiff -n -1 -y \"<span class=\\\"delete\\\">\"  -z \"</span>\" %s %s", chunkfile1, chunkfile2);
+   cmd1 = sprintf("wdiff -n -2 -w \"<span class=\\\"delete\\\">\"  -x \"</span>\" %s %s", chunkfile1, chunkfile2);
+   cmd2 = sprintf("wdiff -n -1 -y \"<span class=\\\"insert\\\">\"  -z \"</span>\" %s %s", chunkfile1, chunkfile2);
 
    for (l = linenum; l < num1; l++) { cmd1 | getline; stack1[l] = $0; }
    for (l = linenum; l < num2; l++) { cmd2 | getline; stack2[l] = $0; }
@@ -260,13 +265,8 @@ function chunkdiff(lclass, rclass) {
 }
 
 function flush() {
-   rclass = lclass = "diff";
-   if (num1 == linenum) 
-      rclass = "insert";
-   if (num2 == linenum) 
-      lclass = "delete";
    multiline = ((num1 - linenum) > 1) || ((num2 - linenum) > 1);
-   if (multiline && usewdiff) chunkdiff(lclass, rclass);
+   if (multiline && usewdiff) chunkdiff();
 
    for (l = linenum; l < num1 || l < num2; l++) {
       if (l in stack1) {
@@ -292,11 +292,8 @@ function flush() {
       } else {
 	 worddiff(line1, line2);
 
-	 if (wordpart[1] == "" && !multiline) rclass = "insert";
-	 if (wordpart[2] == "" && !multiline) lclass = "delete";
-
-	 left  = sprintf("<td class=\"left\" >%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], lclass, wordpart[1], wordpart[3]);
-	 right = sprintf("<td class=\"right\">%s<span class=\"%s\">%s</span>%s</td>", wordpart[0], rclass, wordpart[2], wordpart[3]);
+	 left  = sprintf("<td class=\"lblock\">%s<span class=\"delete\">%s</span>%s</td>", wordpart[0], wordpart[1], wordpart[3]);
+	 right = sprintf("<td class=\"rblock\">%s<span class=\"insert\">%s</span>%s</td>", wordpart[0], wordpart[2], wordpart[3]);
       }
       printf "      <tr>%s<td> </td>%s</tr>\n", left, right;
    }
@@ -364,7 +361,13 @@ function getpageline(line, page) {
 	}
 
 END	{
-	   print "    </table>\n  </body>\n</html>";
+	   printf("\n\
+   </table><br />\n\
+   <center><small><small><i>This html diff was produced by rfcdiff %s, available from\n\
+     <a href=\"http://www.levkowetz.com/ietf/tools/rfcdiff/\">http://www.levkowetz.com/ietf/tools/rfcdiff/</a>\n\
+   </i></small></small></center>\n\
+   </body>\n\
+   </html>\n", ENVIRON["version"]);
 	}
 ' $1 
 }
@@ -378,7 +381,7 @@ die() {
 }
 
 # ----------------------------------------------------------------------
-# Process options (Options are not used currently!)
+# Process options
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0;
 while [ $# -gt 0 ]; do
@@ -398,8 +401,7 @@ while [ $# -gt 0 ]; do
 done
 
 # ----------------------------------------------------------------------
-# Maybe get one of the files from cvs. Determine output file name. Make
-# working file copies
+# Determine output file name. Maybe output usage and exit.
 # ----------------------------------------------------------------------
 #set -x
 
@@ -417,18 +419,17 @@ if [ $# -ge 2 ]; then
    base2=$(basename $2)
    outbase=$(worddiff $base2 $base1 "%s%s-from-%s")
 else
-   base=$(basename $0)
-   echo "usage: $base [options] file1 file2
+   echo "usage: $basename [options] file1 file2
 
-$base takes two RFCs or Internet-Drafts in text form as input, and produces
+$basename takes two RFCs or Internet-Drafts in text form as input, and produces
 output which indicates the differences found in one of various forms, controlled
 by the options listed below. In all cases, page headers and page footers are
 stripped before looking for changes.
 
---chbars	Produce changebar marked .txt output (default)
---html		Produce side-by-side .html diff
---diff		Produce a simple diff output
---wdiff		Produce wdiff output
+--chbars	Produce changebar marked .txt output
+--html		Produce side-by-side .html diff (default)
+--diff		Produce a regular diff output
+--wdiff		Produce paged wdiff output
 "
    exit 1
 fi
