@@ -7,10 +7,10 @@
 # Usage:
 #	rfcdiff [options] file1 file2
 #	
-#	rfcdiff takes two RFCs or Internet-Drafts in text form as input, and produces
-#	output which indicates the differences found in one of various forms, controlled
-#	by the options listed below. In all cases, page headers and page footers are
-#	stripped before looking for changes.
+#	rfcdiff takes two RFCs or Internet-Drafts in text form as input, and
+#	produces output which indicates the differences found in one of various
+#	forms, controlled by the options listed below. In all cases, page
+#	headers and page footers are stripped before looking for changes.
 #	
 #	--html		Produce side-by-side .html diff (default)
 #	--chbars	Produce changebar marked .txt output
@@ -47,24 +47,28 @@
 #	-----------------------------------------------------------------
 #
 # Description:
+
 #	The purpose of this program is to compare two versions of an
-#	internet-draft, and as output produce a diff in one of several
-#	formats:
+#	internet-draft, and as output produce a diff in one of several formats:
+#	
 #		- side-by-side html diff
 #		- paged wdiff output in a text terminal
 #		- a text file with changebars in the left margin
 #		- a simple unified diff output
-#	In all cases, internet-draft headers and footers are stripped
-#	before generating the diff, to produce a cleaner diff.
+#	
+#	In all cases, internet-draft headers and footers are stripped before
+#	generating the diff, to produce a cleaner diff.
 #	
 #	It is called as
 #	
 #		rfcdiff first-file second-file
 #	
-#	The latest version is avaialble from
+#	The latest version is available from
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
+#	
+#	14 Dec 2003	v1.00 - Bumped version number to 1.00
 #	
 #	 6 Dec 2003	v0.42 - Added html diff output for the
 #			identical files case.
@@ -125,7 +129,7 @@
 # End:
 #	
 
-export version="v0.42"
+export version="v1.00"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
