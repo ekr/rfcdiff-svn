@@ -20,8 +20,6 @@
 #	
 #	--wdiff		Produce paged wdiff output
 #	
-#	--abdiff	Produce before/after diff output
-#	
 #	--browse	Show html output in browser
 #	
 #	--keep		Don't delete temporary workfiles
@@ -87,9 +85,13 @@
 #
 # Log:
 #	
+#	17 Mar 2004	v1.10 - Minor tweaks to handle malformed drafts
+#			better.  Added firefox to browser list.
+#	
 #	23 Feb 2004	v1.09 - Started work on an Old/New diff mode,
 #			suitable for diff summaries to mailing lists,
-#			issue trackers, reviewers & rfc-editor.
+#			issue trackers, reviewers & rfc-editor.  Not
+#			complete yet.
 #	
 #	22 Feb 2004	v1.08 - Added --body option to exclude
 #			boilerplate and table of contents changes. 
@@ -181,7 +183,7 @@
 # End:
 #	
 
-export version="1.09"
+export version="1.10"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -194,6 +196,7 @@ export pagecache2="$workdir/pagecache2"
 strip() {
   awk '
 				{ gsub(/\r/, ""); }
+				{ gsub(/[ \t]+$/, ""); }				
 			
 /\[[Pp]age [0-9ivx]+\] *$/	{
 					match($0, /\[[Pp]age [0-9ivx]+\]/);
@@ -201,8 +204,8 @@ strip() {
 					next;
 				}
 /^\f/				{ newpage=1; next; }
-/^Internet.Draft.+[0-9]+ *$/	{ newpage=1; next; }
-/^INTERNET.DRAFT.+[0-9]+ *$/	{ newpage=1; next; }
+/^ *Internet.Draft.+[0-9]+ *$/	{ newpage=1; next; }
+/^ *INTERNET.DRAFT.+[0-9]+ *$/	{ newpage=1; next; }
 /^RFC.+[0-9]+$/			{ newpage=1; next; }
 /^[^ \t]/			{ sentence=1; }
 /./				{
@@ -675,7 +678,7 @@ extract() {
 # ----------------------------------------------------------------------
 
 browse() {
-    browser=$(lookfor phoenix MozillaFirebird mozilla opera Netscape netscape)
+    browser=$(lookfor firefox phoenix MozillaFirebird mozilla opera Netscape netscape dillo)
 
     if [ -z "$browser" ]; then
 	echo "Couldn't find any browser, can't display $*."
