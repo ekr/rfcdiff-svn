@@ -92,7 +92,10 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
-#
+#	06 Dec 2004	v1.19 - fixed a bug introduced in v1.18, where	
+#			not lines of diffs with linebreaks would be
+#			shown when using the --width option.
+#			
 #	02 Dec 2004	v1.18 - On some systems, awk is the original		
 #			Aho, Weinberger, Kernighan awk. We need gawk
 #			or at least nawk, so now we look for those.
@@ -228,7 +231,7 @@
 # End:
 #
 
-export version="1.18"
+export version="1.19"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -589,23 +592,15 @@ function expandtabs(line) {
 
 function maybebreakline(line,    width) {
     width = optwidth;
+    new = "";
     if (width > 0) {
 	line = expandtabs(line);
-
-	if (length(line) > width) {
-	    new = htmlesc(substr(line, 0, width)) "\n";
-	    old = substr(line, width+1);
-	    while (length(old) > width) {
-		new = new htmlesc(substr(old, 0, width)) "\n";
-		old = substr(old, width+1);
-	    }
-	    line = new htmlesc(old) ;
-	} else {
-	    line = htmlesc(line);
+	while (length(line) > width) {
+	    new = new htmlesc(substr(line, 0, width)) "\n";
+	    line = substr(line, width+1);
 	}
-    } else {
-	line = htmlesc(line);
     }
+    line = new htmlesc(line) ;
     return line;
 }
 
@@ -650,16 +645,18 @@ function maybebreakline(line,    width) {
 /^-/	{
 	   line = substr($0, 2);
 	   line = maybebreakline(line);
+	   linecount = gsub(/\n/, "\n", line) + 1; # sick way of counting the number of "\n" in the string
 
 	   stack1[difflines1] = line;
-	   difflines1++;
+	   difflines1 += linecount;
 	}
 /^[+]/	{
 	   line = substr($0, 2);
 	   line = maybebreakline(line);
+	   linecount = gsub(/\n/, "\n", line) + 1;
 
 	   stack2[difflines2] = line;
-	   difflines2++;
+	   difflines2 += linecount;
 	}
 
 END	{
