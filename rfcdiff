@@ -6,34 +6,34 @@
 #
 # Usage:
 #	rfcdiff [options] file1 file2
-#	
+#
 #	rfcdiff takes two RFCs or Internet-Drafts in text form as input, and
 #	produces output which indicates the differences found in one of various
 #	forms, controlled by the options listed below. In all cases, page
 #	headers and page footers are stripped before looking for changes.
-#	
+#
 #	--html		Produce side-by-side .html diff (default)
-#	
+#
 #	--chbars	Produce changebar marked .txt output
-#	
+#
 #	--diff		Produce a regular diff output
-#	
+#
 #	--wdiff		Produce paged wdiff output
-#	
+#
 #	--browse	Show html output in browser
-#	
+#
 #	--keep		Don't delete temporary workfiles
-#	
+#
 #	--version	Show version
-#	
+#
 #	--help		Show this help
-#	
+#
 #	--info "Synopsis|Usage|Copyright|Description|Log"
 #			Show various info
-#	
+#
 #	--width	N	Set a maximum width of N characters for the
 #			display of each half of the old/new html diff
-#	
+#
 #	--linenum	Show linenumbers for each line, not only at the
 #			start of each change section
 #
@@ -41,149 +41,155 @@
 #			table of contents) and postamble (Intellectual
 #			Property Statement, Disclaimer etc)
 #
+#	--nostrip	Don't strip headers and footers (or body)
+#
 # Copyright:
 #	-----------------------------------------------------------------
-#	
+#
 #	Copyright 2002 Henrik Levkowetz
-#	
+#
 #	This program is free software; you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
 #	the Free Software Foundation; either version 2 of the License, or
 #	(at your option) any later version.
-#	
+#
 #	This program is distributed in the hope that it will be useful,
 #	but WITHOUT ANY WARRANTY; without even the implied warranty of
 #	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #	GNU General Public License for more details.
-#	
+#
 #	You should have received a copy of the GNU General Public License
 #	along with this program; if not, write to the Free Software
 #	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#	
+#
 #	-----------------------------------------------------------------
 #
 # Description:
-#	
+#
 #	The purpose of this program is to compare two versions of an
 #	internet-draft, and as output produce a diff in one of several
 #	formats:
-#	
+#
 #		- side-by-side html diff
 #		- paged wdiff output in a text terminal
 #		- a text file with changebars in the left margin
 #		- a simple unified diff output
-#	
+#
 #	In all cases, internet-draft headers and footers are stripped before
 #	generating the diff, to produce a cleaner diff.
-#	
+#
 #	It is called as
-#	
+#
 #		rfcdiff first-file second-file
-#	
+#
 #	The latest version is available from
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
-#	
+#
+#	03 Apr 2004	v1.11 - Added --nostrip option.  Fixed a bug
+#			where a diff on the very first line would not
+#			be shown.
+#
 #	17 Mar 2004	v1.10 - Minor tweaks to handle malformed drafts
 #			better.  Added firefox to browser list.
-#	
+#
 #	23 Feb 2004	v1.09 - Started work on an Old/New diff mode,
 #			suitable for diff summaries to mailing lists,
 #			issue trackers, reviewers & rfc-editor.  Not
 #			complete yet.
-#	
+#
 #	22 Feb 2004	v1.08 - Added --body option to exclude
-#			boilerplate and table of contents changes. 
-#	
+#			boilerplate and table of contents changes.
+#
 #	21 Feb 2004	v1.07 - Added diagnostic message when wdiff not
 #			found or wdiff version not recognised
-#	
+#
 #	01 Feb 2004	v1.06 - Added --linenum option to provide line numbers
 #			on each line. Simplified linebreaking markup.
 #			Some mild refactoring.
-#	
+#
 #	29 Jan 2004	v1.05 - Now providing page and line numbers for
 #			both old and new document versions at the start
 #			of each change section.
 #			The line-breaking code is still buggy...
-#	
+#
 #	25 Jan 2004	v1.04 - Added line numbers for the case when no page
 #			numbers are available
-#	
+#
 #	24 Jan 2004	v1.03 - Fixed a line coloring bug introduced in v1.02
-#	
+#
 #	22 Jan 2004	v1.02 - Added line-breaking functionality through
 #			the --width option.  Experimental -- may be
 #			buggy.
-#	
+#
 #	17 Dec 2003	v1.01 - Fixed a bug where diffs with no text
 #			occurring after the last change would be shown
 #			without the last change. Added some debug
 #			functionality to be able to track this one down.
-#	
+#
 #	14 Dec 2003	v1.00 - Bumped version number to 1.00
-#	
+#
 #	 6 Dec 2003	v0.42 - Added html diff output for the
 #			identical files case.
-#	
+#
 #	 5 Dec 2003	v0.41 - Added --info option
-#	
+#
 #	25 Nov 2003	v0.40 - Added the use of wget (if available) to
 #			pull down remote source files (http: or ftp:)
-#	
+#
 #	20 Nov 2003	v0.39 - Added 'End of changes' line at the end
 #			of html diff. Added a test on wdiff producing
 #			reasonable output with --version option, to
 #			avoid old broken wdiff versions.
-#	
+#
 #	20 Nov 2003	v0.38 - Added --keep option, to keep temporary
 #			files.
-#	
+#
 #	20 Nov 2003	v0.37 - Added --nowdiff option, to make --html
 #			*not* use wdiff even if it is available.
-#	
+#
 #	20 Nov 2003	v0.36 - Added --browse option, to optionally
 #			start a browser to show html diff output.
 #			Refined how we look for a wdiff binary.
-#	
+#
 #	18 Nov 2003	v0.35 - minor tweaks to header/footer stripping
 #			regexps. Changed color marking of differences.
 #			Other minor tweaks and comment updates.
-#	
+#
 #	16 Nov 2003	v0.34 - removed listing of environment when no
 #			files were given on the command line. Added
 #			help text. Added the possibility of using wdiff to get
 #			the changed words in a change block highlighted.
-#	
+#
 #	23 Oct 2003	v0.33 - using different dir's for the stripped
 #			files, to be able to diff files with the same
-#			basename. 
-#	
+#			basename.
+#
 #	 2 Sep 2003	v0.32 - fixed spurious error message when using
 #			--wdiff option
-#	
+#
 #	 1 Sep 2003	v0.31 - not touching the original files, using
 #			temporary directory for work files.
-#	
-#	29 Aug 2003	v0.30 - Removed explicit font size for output. 
-#			Changed regexp for page start (now accepting space 
+#
+#	29 Aug 2003	v0.30 - Removed explicit font size for output.
+#			Changed regexp for page start (now accepting space
 #			in "Internet Draft".
-#	
+#
 #	16 Apr 2003	v0.29 - added wdiff support
-#	
+#
 #	 6 Mar 2003	v0.28 - added --html, --chbars and --diff switches
-#	
+#
 #	 3 Mar 2003	v0.27 - Changed page regexp to accept lowercase
 #				'p'.
-#	
+#
 #	 2 Feb 2003	Expanded to provide side-by-side html diff, in
 #			addition to changebars in .txt files
-#	
+#
 # End:
-#	
+#
 
-export version="1.10"
+export version="1.11"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -196,8 +202,8 @@ export pagecache2="$workdir/pagecache2"
 strip() {
   awk '
 				{ gsub(/\r/, ""); }
-				{ gsub(/[ \t]+$/, ""); }				
-			
+				{ gsub(/[ \t]+$/, ""); }
+
 /\[[Pp]age [0-9ivx]+\] *$/	{
 					match($0, /\[[Pp]age [0-9ivx]+\]/);
 					print substr($0, RSTART+6, RLENGTH-7), outline > ENVIRON["pagecache" ENVIRON["which"]]
@@ -224,14 +230,14 @@ strip() {
 				}
 /[.:][ \t]*$/			{ sentence=1; }
 /^[ \t]*$/			{ haveblank=1; next; }
-				{ outline++; print; } 
+				{ outline++; print; }
 ' $1
 }
 
 
 # ----------------------------------------------------------------------
 # Strip preamble (title, boilerplate and table of contents) and
-# postamble (Intellectual Property Statement, Disclaimer etc) 
+# postamble (Intellectual Property Statement, Disclaimer etc)
 # ----------------------------------------------------------------------
 bodystrip() {
     awk '
@@ -258,8 +264,8 @@ BEGIN	{
 
 		do {
 			if (substr(w1,1,1) == substr(w2,1,1)) {
-				w1 = substr(w1,2)	
-				w2 = substr(w2,2)	
+				w1 = substr(w1,2)
+				w2 = substr(w2,2)
 			} else {
 				break;
 			}
@@ -272,8 +278,8 @@ BEGIN	{
 			l1 = length(w1);
 			l2 = length(w2);
 			if (substr(w1,l1,1) == substr(w2,l2,1)) {
-				w1 = substr(w1,1,l1-1)	
-				w2 = substr(w2,1,l2-1)	
+				w1 = substr(w1,1,l1-1)
+				w2 = substr(w2,1,l2-1)
 			} else {
 				break;
 			}
@@ -292,7 +298,7 @@ BEGIN	{
 htmldiff() {
    awk '
 BEGIN	{
-           FS = "[ \t,]";	   
+           FS = "[ \t,]";
 
 	   # Read pagecache1
 	   maxpage[1] = 1
@@ -318,6 +324,9 @@ BEGIN	{
 	   cmdline = sub("-", " -", ENVIRON["cmdline"])
 
 	   header(base1, base2);
+
+	   difflines1 = 0
+	   difflines2 = 0
 	}
 
 function header(file1, file2) {
@@ -494,7 +503,7 @@ function getpageline(which, line, page) {
 	    return line + ENVIRON["prelines"] - pageend[which,page-1] + 3; # numbers of header lines stripped
 	} else {
 	    return "?";
-	} 
+	}
     }
 }
 
@@ -622,9 +631,10 @@ BEGIN	{
 	      pageend[2,$1] = $2;
 	      if ($1+0 > maxpage[2]) maxpage[2] = $1+0;
 	   }
-	    
+
 	   base1 = ENVIRON["base1"]
 	   base2 = ENVIRON["base2"]
+
 	}
 	{   print; }
 
@@ -722,6 +732,7 @@ die() {
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
 optkeep=0; optinfo=0; optwidth=0;  optnums=0;  optbody=0; optabdiff=0;
+optstrip=1;
 
 export cmdline="$*"
 while [ $# -gt 0 ]; do
@@ -741,6 +752,7 @@ while [ $# -gt 0 ]; do
       --width)	optwidth=$2; shift;;
       --linenum)optnums=1;;
       --body)	optbody=1;;
+      --nostrip)optstrip=0; optbody=0;;
       --)	shift; break;;
 
       -r) options="$options $1 $2"; rev=$2; shift;;
@@ -790,7 +802,7 @@ mkdir $workdir/1 || die "$0: Error: Failed to create temporary directory '$workd
 mkdir $workdir/2 || die "$0: Error: Failed to create temporary directory '$workdir/2'."
 
 # ----------------------------------------------------------------------
-# Strip headers/footers from both files, possibly after downloading
+# If any of the files is an http or ftp URL we download it, else copy it
 # ----------------------------------------------------------------------
 
 wgetbin=$(lookfor wget)
@@ -805,20 +817,31 @@ if [ -n "$wgetbin" ]; then
    if [ ${2#ftp://} != $2 ]; then dowgetarg2=1; fi
 fi
 
-export which=2
-if [ $dowgetarg2 -gt 0 ]; then
-   $wgetbin -nv -O - $2 | strip > $workdir/2/$base2
-else
-   strip $2 > $workdir/2/$base2
-fi
 
-export which=1
 if [ $dowgetarg1 -gt 0 ]; then
-   $wgetbin -nv -O - $1 | strip > $workdir/1/$base1
+   $wgetbin -nv $1 -O $workdir/1/$base1
 else
-   strip $1 > $workdir/1/$base1
+   cp $1 $workdir/1/$base1
 fi
 
+if [ $dowgetarg2 -gt 0 ]; then
+   $wgetbin -nv $2 -O $workdir/2/$base2
+else
+   cp $2 $workdir/2/$base2
+fi
+
+# ----------------------------------------------------------------------
+# Maybe strip headers/footers from both files
+# ----------------------------------------------------------------------
+
+if [ $optstrip -gt 0 ]; then
+   export which=1
+   strip $workdir/1/$base1 > $workdir/1/$base1.stripped
+   mv $workdir/1/$base1.stripped $workdir/1/$base1
+   export which=2
+   strip $workdir/2/$base2 > $workdir/2/$base2.stripped
+   mv $workdir/2/$base2.stripped $workdir/2/$base2
+fi
 
 # ----------------------------------------------------------------------
 # Maybe strip preamble (title, boilerplate and table of contents) and
@@ -863,7 +886,7 @@ if [ $optnowdiff -eq 0 ]; then
       wdiffver=$($wdiffbin --version 2>/dev/null | grep "wdiff.\+[0-9]\.[0-9]")
       if [ -z "$wdiffver" ]; then
         wdiffbin="";
-	echo -en "\n  Found wdiff, but it reported no recognisable version."	
+	echo -en "\n  Found wdiff, but it reported no recognisable version."
       fi
    else
       echo -en "\n  Couldn't find wdiff."
@@ -893,10 +916,10 @@ if [ $optdiff -gt 0 ]; then
    diff -bBwd -u$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
 fi
 if [ $optabdiff -gt 0 ]; then
-   diff -bBwd -c5 1/$base1 2/$base2 | tee $workdir/diff | abdiff
+   diff -bBwd 1/$base1 2/$base2 | tee $workdir/diff | abdiff
 fi
 if [ $optwdiff -gt 0 ]; then
-   wdiff -a 1/$base1 2/$base2 
+   wdiff -a 1/$base1 2/$base2
 fi
 
 cd -; if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
@@ -910,7 +933,7 @@ if [ $optkeep -eq 0 ]; then
    if [ -f $pagecache2 ]; then rm $pagecache2; fi
    rm -fr $workdir/1
    rm -fr $workdir/2
-   rm $workdir/diff 
+   rm $workdir/diff
    rmdir $workdir
 else
    echo "
