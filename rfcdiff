@@ -90,6 +90,10 @@
 #
 # Log:
 #
+#	11 Jun 2004	v1.13 - Tweaked the regexp to match section
+#			numbers slightly.  Added -wd option to diff
+#			also for the ab (rfc-editor before/after) diff.
+#
 #	07 Jun 2004	v1.12 - Added --abdiff option, to produce
 #			OLD/NEW output suitable for the RFC-Editor
 #
@@ -195,7 +199,7 @@
 # End:
 #
 
-export version="1.12"
+export version="1.13"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -655,7 +659,7 @@ BEGIN	{
 	   section = $1 " " $2;
 	   para = 0;
 	}
-/^ ([0-9]+\.)+  /	{
+/^ [0-9]+(\.[0-9]+)*\.? /	{
 	   section = "Section " $1;
 	   para = 0;
 	}
@@ -966,7 +970,7 @@ if [ $optdiff -gt 0 ]; then
    diff -bBwd -u$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
 fi
 if [ $optabdiff -gt 0 ]; then
-   diff -u1000 1/$base1 2/$base2 | tee $workdir/diff | abdiff
+   diff -wd -u1000 1/$base1 2/$base2 | tee $workdir/diff | abdiff
 fi
 if [ $optwdiff -gt 0 ]; then
    wdiff -a 1/$base1 2/$base2
