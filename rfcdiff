@@ -47,7 +47,7 @@
 #	-----------------------------------------------------------------
 #
 # Description:
-
+#	
 #	The purpose of this program is to compare two versions of an
 #	internet-draft, and as output produce a diff in one of several formats:
 #	
@@ -67,6 +67,11 @@
 #		http://www.levkowetz.com/ietf/tools/rfcdiff
 #
 # Log:
+#	
+#	17 Dec 2003	v1.01 - Fixed a bug where diffs with no text
+#			occurring after the last change would be shown
+#			without the last change. Added some debug
+#			functionality to be able to track this one down.
 #	
 #	14 Dec 2003	v1.00 - Bumped version number to 1.00
 #	
@@ -129,7 +134,7 @@
 # End:
 #	
 
-export version="v1.00"
+export version="v1.01"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -423,6 +428,7 @@ function getpageline(line, page) {
 	}
 
 END	{
+	   flush();
 	   printf("\n\
      <tr><td class=\"left\"></td><td> </td><td class=\"right\"></td></tr>\n\
      <tr bgcolor=\"gray\"><th colspan=\"3\" align=\"center\"><a name=\"end\">&nbsp;%s&nbsp;</th></tr>\n\
@@ -653,13 +659,13 @@ if cmp 1/$base1 2/$base2 >/dev/null; then
 fi
 
 if [ $opthtml -gt 0 ]; then
-   diff -ubBwd -$prelines 1/$base1 2/$base2 | htmldiff > $tempout
+   diff -ubBwd -$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
 fi
 if [ $optchbars -gt 0 ]; then
-   diff -ubBwd -10000 1/$base1 2/$base2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
+   diff -ubBwd -10000 1/$base1 2/$base2 | tee $workdir/diff | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
 fi
 if [ $optdiff -gt 0 ]; then
-   diff -ubBwd -$prelines 1/$base1 2/$base2 | htmldiff > $tempout
+   diff -ubBwd -$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
 fi
 if [ $optwdiff -gt 0 ]; then
    wdiff -a 1/$base1 2/$base2 
@@ -675,6 +681,7 @@ if [ $optkeep -eq 0 ]; then
    if [ -f $pagecache ]; then rm $pagecache; fi
    rm -fr $workdir/1
    rm -fr $workdir/2
+   rm $workdir/diff 
    rmdir $workdir
 else
    echo "
