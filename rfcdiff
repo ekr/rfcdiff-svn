@@ -33,13 +33,16 @@
 #		chbars first-file second-file
 #
 
+# ----------------------------------------------------------------------
+# Strip headers footers and formfeeds from infile to stdout
+# ----------------------------------------------------------------------
 strip() {
   awk '
 			{ gsub(/\r/, ""); }
 			
 /\[Page [0-9]+\]$/	{ next; }
 /^\f/			{ next; }
-/^Internet-Draft/	{ newpage=1; next; }
+/^Internet-Draft.+[0-9]+$/	{ newpage=1; next; }
 /^[^ \t]/		{ sentence=1; }
 /./			{
 			   if (newpage) {
@@ -61,11 +64,15 @@ strip() {
 ' $1
 }
 
+# ----------------------------------------------------------------------
+# From two words, find common prefix and differing part, join descriptively
+# ----------------------------------------------------------------------
 worddiff() {
    awk '
 BEGIN	{
 		w1 = ARGV[1]
 		w2 = ARGV[2]
+		format = ARGV[3]
 
 		do {
 			if (substr(w1,1,1) == substr(w2,1,1)) {
@@ -90,13 +97,158 @@ BEGIN	{
 			}
 		} while (l1 && l2)
 
-		printf "%s%s..%s\n", prefix, w1, w2;
+		suffix = substr(ARGV[1], prefixlen+length(w1))
+
+		printf format, prefix, w1, w2, suffix;
 	}
-' $1 $2
+' $1 $2 $3
 }
 
-tempfile="chbars-$$"
+# ----------------------------------------------------------------------
+# Generate a html page with side-by-side diff from a unified diff
+# ----------------------------------------------------------------------
+htmldiff() {
+   awk '
+BEGIN	{
+           FS = "[ \t,]";	   
+	   linenum = 1;
+	   num1 = 1;
+	   num2 = 1;
+	}
 
+function header(file1, file2) {
+   printf " \n\
+<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \n\
+<html> \n\
+<head> \n\
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\" /> \n\
+<meta http-equiv=\"Content-Style-Type\" content=\"text/css\" /> \n\
+<link rel=\"stylesheet\" href=\"cvs.css\" type=\"text/css\" /> \n\
+<title>Diff: %s - %s</title> \n\
+</head> \n\
+<body> \n\
+<style> \n\
+tr { font-size: 9pt; height: 1em; } \n\
+td { white-space: pre; font-family: monospace; } \n\
+th { font-size: 12pt; } \n\
+.left { background-color: #EEE; } \n\
+.right { background-color: #FFF; } \n\
+.diff { background-color: lightblue; } \n\
+.void { background-color: lightyellow; } \n\
+</style> \n\
+<table border='0' cellpadding='0' cellspacing='0'> \
+<tr bgcolor='orange'><th>%s</th><th> </th><th>%s</th><tr> \
+", file1, file2, file1, file2;
+}
+
+function worddiff(w1, w2) {
+   prefixlen = 0;
+   word1 = w1;
+   do {
+      if (substr(w1,1,1) == substr(w2,1,1)) {
+	 w1 = substr(w1,2);
+	 w2 = substr(w2,2);
+      } else {
+	 break;
+      }
+      prefixlen++;
+   } while (length(w1) && length(w2));
+
+   prefix = substr(word1,1,prefixlen);
+
+   do {
+      l1 = length(w1);
+      l2 = length(w2);
+      if (substr(w1,l1,1) == substr(w2,l2,1)) {
+	 w1 = substr(w1,1,l1-1);
+	 w2 = substr(w2,1,l2-1);
+      } else {
+	 break;
+      }
+   } while (l1 && l2);
+
+   suffix = substr(word1, prefixlen+length(w1)+1);
+
+   wordpart[0] = prefix;
+   wordpart[1] = w1;
+   wordpart[2] = w2;
+   wordpart[3] = suffix;
+}
+
+function flush() {
+	   for (l = linenum; l < num1 || l < num2; l++) {
+	      if (l in stack1) {
+		 line1 = stack1[l];
+		 delete stack1[l];
+		 if (line1 == "")
+		    line1 = "                                                                        ";
+	      } else {
+		 line1 = "";
+	      }
+	      if (l in stack2) {
+		 line2 = stack2[l];
+		 delete stack2[l];
+		 if (line2 == "")
+		    line2 = "                                                                        ";
+	      } else {
+		 line2 = "";
+	      }
+	      worddiff(line1, line2);
+
+	      left  = sprintf("<td class=\"left\" >%s<span class=\"diff\">%s</span>%s</td>", wordpart[0], wordpart[1], wordpart[3]);
+	      right = sprintf("<td class=\"right\">%s<span class=\"diff\">%s</span>%s</td>", wordpart[0], wordpart[2], wordpart[3]);
+	      printf "      <tr>%s<td> </td>%s</tr>\n", left, right;
+	   }
+	}
+
+/^@@/	{
+	   linenum = 0 - $2;
+	   diffnum ++;
+	   if (linenum > 1) {
+	      printf "      <tr><td class=\"left\"></td><td> </td><td class=\"right\"></td></tr>\n";
+	      printf "      <tr bgcolor=\"gray\" align=\"left\"><th><a name=\"diff-%s\">&nbsp;&nbsp;Skipping to line %s: </th><th> </th><th></th></tr>\n", diffnum, linenum;
+	   }
+	}
+
+/^---/	{  file1 = $2; next; }
+/^[+][+][+]/	{  file2 = $2; header(file1, file2); next; }
+/^[ ]/	{
+	   gsub("&", "\\&amp;")
+	   gsub("<", "\\&lt;")
+	   gsub(">", "\\&gt;")
+	   line = substr($0, 2);
+	   flush();
+	   printf "      <tr><td class=\"left\">%s</td><td> </td><td class=\"right\">%s</td></tr>\n", line, line;
+	   linenum ++;
+	   num1 = linenum;
+	   num2 = linenum;
+	}
+/^-/	{
+	   gsub("&", "\\&amp;")
+	   gsub("<", "\\&lt;")
+	   gsub(">", "\\&gt;")
+	   line = substr($0, 2);
+	   stack1[num1] = line;
+	   num1++;
+	}
+/^[+]/	{
+	   gsub("&", "\\&amp;")
+	   gsub("<", "\\&lt;")
+	   gsub(">", "\\&gt;")
+	   line = substr($0, 2);
+	   stack2[num2] = line;
+	   num2++;
+	}
+
+END	{
+	   print "    </table>\n  </body>\n</html>";
+	}
+' $1 
+}
+
+# ----------------------------------------------------------------------
+# Process options
+# ----------------------------------------------------------------------
 while [ $# -gt 0 ]; do
    case "$1" in
       -r) options="$options $1 $2"; rev=$2; shift;;
@@ -108,6 +260,12 @@ done
 
 set $files
 
+# ----------------------------------------------------------------------
+# Maybe get one of the files from cvs. Determine output file name. Make
+# working file copies
+# ----------------------------------------------------------------------
+tempfile="chbars-$$"
+
 if   [ $# -eq 1 ]; then
    mv $1 $1.curr
    cvs up -p $options $1 > $tempfile.prev 2>/dev/null
@@ -115,27 +273,39 @@ if   [ $# -eq 1 ]; then
    cp $1 $tempfile.curr
    outfile=changes-$rev.txt
 elif [ $# -eq 2 ]; then
-    cp $1 $tempfile.prev
-    cp $2 $tempfile.curr
-    base1=$(basename $1)
-    base2=$(basename $2)
-    outfile=changes-$(worddiff $base1 $base2).txt
+   if [ $1 = $2 ]; then
+      echo The files are the same file
+      exit
+   fi
+   mv $1 $1.orig
+   mv $2 $2.orig
+   base1=$(basename $1)
+   base2=$(basename $2)
+   outfile=$(worddiff $base2 $base1 "%s%s-from-%s").chbar
+   htmlfile=$(worddiff $base2 $base1 "%s%s-from-%s").diff.html
 else
    echo "Usage: chbars [cvs up options] file1 [file2]"
 fi
 
-strip $tempfile.prev > $tempfile.prev.stripped
-strip $tempfile.curr > $tempfile.curr.stripped
+# ----------------------------------------------------------------------
+# Strip headers/footers from both files
+# ----------------------------------------------------------------------
+strip $1.orig > $1
+strip $2.orig > $2
 
-rm $tempfile.curr
-rm $tempfile.prev
-
-if cmp $tempfile.prev.stripped $tempfile.curr.stripped >/dev/null; then
-    echo Files are identical
+# ----------------------------------------------------------------------
+# Do diff
+# ----------------------------------------------------------------------
+if cmp $1 $2 >/dev/null; then
+   echo Files are identical
 else
-    diff -ubBw -10000 $tempfile.prev.stripped $tempfile.curr.stripped | grep -v \.."^-" | tail +3 | sed 's/^+/|/' > $outfile
-    echo "Changebar text was output to $outfile"
+    diff -ubBw -10000 $1 $2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $outfile
+    diff -ubBw -10 $1 $2 | htmldiff > $htmlfile
+    echo "  Changebar text was output to $outfile,"
+    echo "  html diff to $htmlfile"
 fi
 
-rm $tempfile.prev.stripped
-rm $tempfile.curr.stripped
+if [ -f $1.orig ]; then mv $1.orig $1; fi
+if [ -f $2.orig ]; then mv $2.orig $2; fi
+
+#rm $tempfile.diff
