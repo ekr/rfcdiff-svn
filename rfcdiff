@@ -36,6 +36,11 @@
 #		http://www.levkowetz.com/ietf/
 #
 #
+#	 1 Sep 2003	v0.31 - not touching the original files, using
+#			temporary directory for work files.
+#	29 Aug 2003	Removed explicit font size for output. Changed
+#			regexp for page start (now accepting space in
+#			"Internet Draft".
 #	16 Apr 2003	v0.29 - added wdiff support
 #	 6 Mar 2003	v0.28 - added --html, --chbars and --diff switches
 #	 3 Mar 2003	v0.27 - Changed page regexp to accept lowercase
@@ -44,9 +49,10 @@
 #
 #	
 
-export version="v0.27"
-export pagecache="pagecache-$$.tmp"
+export version="v0.31"
+export pagecache="/tmp/pagecache-$$"
 export prelines="10"
+export workdir="/tmp/rfcchbars-$$"
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -312,6 +318,14 @@ END	{
 }
 
 # ----------------------------------------------------------------------
+# Utility for error exit
+# ----------------------------------------------------------------------
+die() {
+   echo $*;
+   exit 1;
+}
+
+# ----------------------------------------------------------------------
 # Process options (Options are not used currently!)
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0;
@@ -335,14 +349,15 @@ set $files
 # Maybe get one of the files from cvs. Determine output file name. Make
 # working file copies
 # ----------------------------------------------------------------------
+#set -x
 
 if [ $# -ge 2 ]; then
    if [ $1 = $2 ]; then
       echo The files are the same file
       exit
    fi
-   mv $1 $1.orig
-   mv $2 $2.orig
+#   mv $1 $1.orig
+#   mv $2 $2.orig
    base1=$(basename $1)
    base2=$(basename $2)
    outbase=$(worddiff $base2 $base1 "%s%s-from-%s")
@@ -351,13 +366,20 @@ else
    exit 1
 fi
 
+
+# ----------------------------------------------------------------------
+# create working directory.
+# ----------------------------------------------------------------------
+mkdir $workdir || die "$0: Error: Failed to create temporary directory '$workdir'."
+
 # ----------------------------------------------------------------------
 # Strip headers/footers from both files
 # ----------------------------------------------------------------------
 
+
 # The last file we strip determines the page numbers for htmldiff
-strip $2.orig > $2
-strip $1.orig > $1
+strip $2 > $workdir/$base2
+strip $1 > $workdir/$base1
 
 
 # ----------------------------------------------------------------------
@@ -376,27 +398,33 @@ else
       outfile=$outbase.diff
     fi
 fi
+tempout=$(basename $outfile)
 
 # ----------------------------------------------------------------------
 # Do diff
 # ----------------------------------------------------------------------
-if cmp $1 $2 >/dev/null; then
+
+cd $workdir
+if cmp $base1 $base2 >/dev/null; then
    echo Files are identical
 else
    if [ $opthtml -gt 0 ]; then
-      diff -ubBwd -$prelines $1 $2 | htmldiff > $outfile
+      diff -ubBwd -$prelines $base1 $base2 | htmldiff > $tempout
    fi
    if [ $optchbars -gt 0 ]; then
-      diff -ubBwd -10000 $1 $2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $outfile
+      diff -ubBwd -10000 $base1 $base2 | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
    fi
    if [ $optdiff -gt 0 ]; then
-      diff -ubBwd -$prelines $1 $2 | htmldiff > $outfile
+      diff -ubBwd -$prelines $base1 $base2 | htmldiff > $tempout
    fi
    if [ $optwdiff -gt 0 ]; then
-      wdiff -a $1 $2 
+      wdiff -a $base1 $base2 
    fi
 fi
+rm $base1 $base2
+cd -
 
-if [ -f $1.orig ]; then mv $1.orig $1; fi
-if [ -f $2.orig ]; then mv $2.orig $2; fi
+if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
 if [ -f $pagecache ]; then rm $pagecache; fi
+rmdir $workdir
+
