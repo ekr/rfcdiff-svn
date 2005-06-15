@@ -93,6 +93,10 @@
 #
 # Log:
 #			
+#	16 Jun 2005	v1.24 - changed to use uppercase "-U" option to
+#			diff, for MacOS X compatibility. (Thanks to
+#			Lars Eggert.)
+#			
 #	24 Jan 2005	v1.23 - Fixed a bug where html entity codes was
 #			broken up by diff markup.
 #			
@@ -244,8 +248,8 @@
 # End:
 #
 
-export version="1.23"
-export progdate="(24 Jan 2005)"
+export version="1.24"
+export progdate="(16 Jun 2005)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -1046,16 +1050,16 @@ if cmp 1/$base1 2/$base2 >/dev/null; then
 fi
 
 if [ $opthtml -gt 0 ]; then
-   diff -bBwd -u$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
+   diff -bBwd -U$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
 fi
 if [ $optchbars -gt 0 ]; then
-   diff -bBwd -u10000 1/$base1 2/$base2 | tee $workdir/diff | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
+   diff -bBwd -U10000 1/$base1 2/$base2 | tee $workdir/diff | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
 fi
 if [ $optdiff -gt 0 ]; then
-   diff -bBwd -u$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
+   diff -bBwd -U$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
 fi
 if [ $optabdiff -gt 0 ]; then
-   diff -wd -u1000 1/$base1 2/$base2 | tee $workdir/diff | abdiff
+   diff -wd -U1000 1/$base1 2/$base2 | tee $workdir/diff | abdiff
 fi
 if [ $optwdiff -gt 0 ]; then
    wdiff -a 1/$base1 2/$base2
