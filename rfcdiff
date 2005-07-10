@@ -93,6 +93,11 @@
 #
 # Log:
 #			
+#	11 Jul 2005	v1.25 - Tweaked the regexps for --bodystrip and
+#			recognition of wdiff version, both thanks to
+#			Bruce Lilly.  Tweak to handle directory names
+#			with whitespace, thanks to Thomas Morin.
+#			
 #	16 Jun 2005	v1.24 - changed to use uppercase "-U" option to
 #			diff, for MacOS X compatibility. (Thanks to
 #			Lars Eggert.)
@@ -248,8 +253,8 @@
 # End:
 #
 
-export version="1.24"
-export progdate="(16 Jun 2005)"
+export version="1.25"
+export progdate="(12 Jul 2005)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -320,10 +325,12 @@ strip() {
 bodystrip() {
     $AWK '
     /^[ \t]*Acknowledgment/		{ inbody = 0; }
-    /^[ \t]*Copyright Statement/	{ inbody = 0; }
+    /^(Full )*Copyright Statement$/	{ inbody = 0; }
     /^[ \t]*Disclaimer of Validid/	{ inbody = 0; }
     /^[ \t]*Intellectual Property/	{ inbody = 0; }
-    /^[ \t]*1. Introduction/	{ inbody = 1; }
+    /^Abstract$/			{ inbody = 0; }
+    /^Table of Contents$/		{ inbody = 0; }
+    /^1.[ \t]*Introduction$/	{ inbody = 1; }
 
     inbody			{ print; }
     ' $1
@@ -1010,7 +1017,7 @@ fi
 if [ $optnowdiff -eq 0 ]; then
    wdiffbin=$(lookfor wdiff)
    if [ -n "$wdiffbin" ]; then
-      wdiffver=$($wdiffbin --version 2>/dev/null | grep "wdiff.\+[0-9]\.[0-9]")
+      wdiffver=$($wdiffbin --version 2>/dev/null | egrep "(wdiff|GNU).+[0-9]\.[0-9]")
       if [ -z "$wdiffver" ]; then
         wdiffbin="";
 	echo -en "\n  Found wdiff, but it reported no recognisable version."
@@ -1069,7 +1076,7 @@ if [ $optstdout -gt 0 ]; then
   cat $tempout
   rm  $tempout
 else
-  cd $origdir; if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
+  cd "$origdir"; if [ -f $workdir/$tempout ]; then mv $workdir/$tempout $outfile; fi
 fi
 
 if [ $optshow -gt 0 ]; then
@@ -1089,5 +1096,4 @@ else
    echo "
    Temporary workfiles have been left in $workdir/, and packed up in $workdir.tgz"
 fi
-
 
