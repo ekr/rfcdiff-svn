@@ -93,6 +93,13 @@
 #
 # Log:
 #			
+#	04 Aug 2005	v1.27 - Added -f option to some mv commands to
+#			handle read-only input files
+#			
+#	29 Jul 2005	v1.26 - Removed spurious empty output line.
+#			Added guard against files beginning with "-"
+#			for mv.
+#			
 #	11 Jul 2005	v1.25 - Tweaked the regexps for --bodystrip and
 #			recognition of wdiff version, both thanks to
 #			Bruce Lilly.  Tweak to handle directory names
@@ -253,8 +260,8 @@
 # End:
 #
 
-export version="1.25"
-export progdate="(12 Jul 2005)"
+export version="1.26"
+export progdate="(15 Sep 2005)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -897,7 +904,7 @@ while [ $# -gt 0 ]; do
    esac
    shift
 done
-echo $1 $2 $3
+#echo $1 $2 $3
 
 export optwidth
 export optnums
@@ -971,10 +978,10 @@ fi
 if [ $optstrip -gt 0 ]; then
    export which=1
    strip $workdir/1/$base1 > $workdir/1/$base1.stripped
-   mv $workdir/1/$base1.stripped $workdir/1/$base1
+   mv -f $workdir/1/$base1.stripped $workdir/1/$base1
    export which=2
    strip $workdir/2/$base2 > $workdir/2/$base2.stripped
-   mv $workdir/2/$base2.stripped $workdir/2/$base2
+   mv -f $workdir/2/$base2.stripped $workdir/2/$base2
 fi
 
 # ----------------------------------------------------------------------
@@ -995,20 +1002,20 @@ if [ "$3" ]; then
   outfile=$3
 else
     if [ $opthtml -gt 0 ]; then
-      outfile=$outbase.diff.html
+      outfile=./$outbase.diff.html
     fi
     if [ $optchbars -gt 0 ]; then
-      outfile=$outbase.chbar
+      outfile=./$outbase.chbar
     fi
     if [ $optdiff -gt 0 ]; then
-      outfile=$outbase.diff
+      outfile=./$outbase.diff
     fi
     if [ $optabdiff -gt 0 ]; then
-      outfile=$outbase.changes
+      outfile=./$outbase.changes
     fi
 fi
 if [ "$outfile" ]; then
-   tempout=$(basename $outfile)
+   tempout=./$(basename $outfile)
 fi
 
 # ----------------------------------------------------------------------
