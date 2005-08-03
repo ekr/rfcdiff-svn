@@ -94,7 +94,8 @@
 # Log:
 #			
 #	04 Aug 2005	v1.27 - Added -f option to some mv commands to
-#			handle read-only input files
+#			handle read-only input files.  Added statistics
+#			output.
 #			
 #	29 Jul 2005	v1.26 - Removed spurious empty output line.
 #			Added guard against files beginning with "-"
@@ -260,8 +261,8 @@
 # End:
 #
 
-export version="1.26"
-export progdate="(15 Sep 2005)"
+export version="1.27"
+export progdate="(16 Sep 2005)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -460,6 +461,7 @@ function header(file1, file2) {
 "    .rblock .cont { background-color: #DD6; } \n" \
 "    .insert .cont { background-color: #0DD; } \n" \
 "    .delete .cont { background-color: #8AD; } \n" \
+"    .stats, .stats td, .stats th { background-color: #EEE; padding: 2px 0; } \n" \
 "  </style> \n" \
 "</head> \n" \
 "<body > \n" \
@@ -689,7 +691,9 @@ function maybebreakline(line,    width) {
 	   linenum2++;
 	   printf "      <tr><td class=\"lineno\" valign=\"top\">%s</td><td class=\"left\">%s</td><td> </td>", numdisplay(1, linenum1), line;
 	   printf "<td class=\"right\">%s</td><td class=\"lineno\" valign=\"top\">%s</td></tr>\n", line, numdisplay(2, linenum2);
+	   diffcount1 += difflines1
 	   difflines1 = 0
+	   diffcount2 += difflines2
 	   difflines2 = 0
 	}
 /^-/	{
@@ -711,11 +715,12 @@ END	{
 	   flush();
 	   printf("\n" \
 "     <tr><td></td><td class=\"left\"></td><td> </td><td class=\"right\"></td><td></td></tr>\n" \
-"     <tr bgcolor=\"gray\"><th colspan=\"5\" align=\"center\"><a name=\"end\">&nbsp;%s&nbsp;</a></th></tr>\n" \
+"     <tr bgcolor=\"gray\"><th colspan=\"5\" align=\"center\"><a name=\"end\">&nbsp;%s. %s change blocks.&nbsp;</a></th></tr>\n" \
+"     <tr class=\"stats\"><td></td><th><i>%s lines changed or deleted</i></th><th><i> </i></th><th><i>%s lines changed or added</i></th><td></td></tr>\n" \
 "     <tr><td colspan=\"5\" align=\"center\" class=\"small\"><br/>This html diff was produced by rfcdiff %s, available from <a href=\"http://www.levkowetz.com/ietf/tools/rfcdiff/\" >http://www.levkowetz.com/ietf/tools/rfcdiff/</a> </td></tr>\n" \
 "   </table>\n" \
 "   </body>\n" \
-"   </html>\n", diffnum?"End of changes.":"No changes.", ENVIRON["version"]);
+"   </html>\n", diffnum?"End of changes":"No changes", difftag, diffcount1, diffcount2, ENVIRON["version"]);
 	}
 ' $1
 }
