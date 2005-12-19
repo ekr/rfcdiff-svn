@@ -93,6 +93,9 @@
 #
 # Log:
 #			
+#	20 Dec 2005	v1.28 - Changed font-size units from pt to em.
+#			Made white-space ignoring somewhat less aggressive.
+#	
 #	04 Aug 2005	v1.27 - Added -f option to some mv commands to
 #			handle read-only input files.  Added statistics
 #			output.
@@ -261,7 +264,7 @@
 # End:
 #
 
-export version="1.27"
+export version="1.28"
 export progdate="(16 Sep 2005)"
 export prelines="10"
 export basename=$(basename $0)
@@ -440,9 +443,9 @@ function header(file1, file2) {
 "  <style type=\"text/css\"> \n" \
 "    body    { margin: 0.4ex; margin-right: auto; } \n" \
 "    tr      { } \n" \
-"    td      { white-space: pre; font-family: monospace; vertical-align: top; font-size: 9pt;} \n" \
-"    th      { font-size: 11pt; } \n" \
-"    .small  { font-size: 7pt; font-style: italic; font-family: Verdana, Helvetica, sans-serif; } \n" \
+"    td      { white-space: pre; font-family: monospace; vertical-align: top; font-size: 0.9em;} \n" \
+"    th      { font-size: 0.9em; } \n" \
+"    .small  { font-size: 0.6em; font-style: italic; font-family: Verdana, Helvetica, sans-serif; } \n" \
 "    .left   { background-color: #EEE; } \n" \
 "    .right  { background-color: #FFF; } \n" \
 "    .diff   { background-color: #CCF; } \n" \
@@ -453,7 +456,7 @@ function header(file1, file2) {
 "    .void   { background-color: #FFB; } \n" \
 "    .cont   { background-color: #EEE; } \n" \
 "    .linebr { background-color: #AAA; } \n" \
-"    .lineno { color: red; background-color: #FFF; font-size: 8pt; text-align: right; padding: 0 2px; } \n" \
+"    .lineno { color: red; background-color: #FFF; font-size: 0.7em; text-align: right; padding: 0 2px; } \n" \
 "    .elipsis{ background-color: #AAA; } \n" \
 "    .left .cont { background-color: #DDD; } \n" \
 "    .right .cont { background-color: #EEE; } \n" \
@@ -1069,13 +1072,13 @@ if cmp 1/$base1 2/$base2 >/dev/null; then
 fi
 
 if [ $opthtml -gt 0 ]; then
-   diff -bBwd -U$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
+   diff -Bwd -U$prelines 1/$base1 2/$base2 | tee $workdir/diff | htmldiff > $tempout
 fi
 if [ $optchbars -gt 0 ]; then
-   diff -bBwd -U10000 1/$base1 2/$base2 | tee $workdir/diff | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
+   diff -Bwd -U10000 1/$base1 2/$base2 | tee $workdir/diff | grep -v "^-" | tail +3 | sed 's/^+/|/' > $tempout
 fi
 if [ $optdiff -gt 0 ]; then
-   diff -bBwd -U$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
+   diff -Bwd -U$prelines 1/$base1 2/$base2 | tee $workdir/diff > $tempout
 fi
 if [ $optabdiff -gt 0 ]; then
    diff -wd -U1000 1/$base1 2/$base2 | tee $workdir/diff | abdiff
