@@ -20,6 +20,8 @@
 #	
 #	--wdiff		Produce paged wdiff output
 #	
+#	--hwdiff	Produce html-wrapped coloured wdiff output
+#	
 #	--browse	Show html output in browser
 #	
 #	--keep		Don't delete temporary workfiles
@@ -93,6 +95,9 @@
 #
 # Log:
 #			
+#	20 Dec 2005	v1.29 - Added --hwdiff switch, to give single-
+#			columnt html output, as in Bill Fenner's htmlwdiff
+#	
 #	20 Dec 2005	v1.28 - Changed font-size units from pt to em.
 #			Made white-space ignoring somewhat less aggressive.
 #	
@@ -264,8 +269,8 @@
 # End:
 #
 
-export version="1.28"
-export progdate="(16 Sep 2005)"
+export version="1.29"
+export progdate="(04 Feb 2006)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -443,8 +448,8 @@ function header(file1, file2) {
 "  <style type=\"text/css\"> \n" \
 "    body    { margin: 0.4ex; margin-right: auto; } \n" \
 "    tr      { } \n" \
-"    td      { white-space: pre; font-family: monospace; vertical-align: top; font-size: 0.9em;} \n" \
-"    th      { font-size: 0.9em; } \n" \
+"    td      { white-space: pre; font-family: monospace; vertical-align: top; font-size: 0.86em;} \n" \
+"    th      { font-size: 0.86em; } \n" \
 "    .small  { font-size: 0.6em; font-style: italic; font-family: Verdana, Helvetica, sans-serif; } \n" \
 "    .left   { background-color: #EEE; } \n" \
 "    .right  { background-color: #FFF; } \n" \
@@ -877,20 +882,21 @@ die() {
 # ----------------------------------------------------------------------
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
 optkeep=0; optinfo=0; optwidth=0;  optnums=0;  optbody=0; optabdiff=0;
-optstrip=1;
+optstrip=1; opthwdiff=0;
 optstdout=0;
 
 export cmdline="$*"
 while [ $# -gt 0 ]; do
    case "$1" in
-      --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optabdiff=0;;
-      --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0; optabdiff=0;;
-      --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0; optabdiff=0;;
-      --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1; optabdiff=0;;
-      --changes)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
-      --abdiff)	opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
-      --ab-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
-      --rfc-editor-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; optabdiff=1;;
+      --html)   opthtml=1; optdiff=0; optchbars=0; optwdiff=0; opthwdiff=0; optabdiff=0;;
+      --diff)   opthtml=0; optdiff=1; optchbars=0; optwdiff=0; opthwdiff=0; optabdiff=0;;
+      --chbars) opthtml=0; optdiff=0; optchbars=1; optwdiff=0; opthwdiff=0; optabdiff=0;;
+      --wdiff)  opthtml=0; optdiff=0; optchbars=0; optwdiff=1; opthwdiff=0; optabdiff=0;;
+      --hwdiff) opthtml=0; optdiff=0; optchbars=0; optwdiff=0; opthwdiff=1; optabdiff=0;;
+      --changes)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; opthwdiff=0; optabdiff=1;;
+      --abdiff)	opthtml=0; optdiff=0; optchbars=0; optwdiff=0; opthwdiff=0; optabdiff=1;;
+      --ab-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; opthwdiff=0; optabdiff=1;;
+      --rfc-editor-diff)opthtml=0; optdiff=0; optchbars=0; optwdiff=0; opthwdiff=0; optabdiff=1;;
       --version)echo -e "$basename\t$version\t$progdate"; exit 0;;
       --browse) optshow=1;;
       --nowdiff)optnowdiff=1;;
@@ -993,6 +999,17 @@ if [ $optstrip -gt 0 ]; then
 fi
 
 # ----------------------------------------------------------------------
+# Maybe do html quoting
+# ----------------------------------------------------------------------
+
+if [ $opthwdiff -gt 0 ]; then
+   sed -e 's/&/&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' $workdir/1/$base1 > $workdir/1/$base1.quoted
+   mv -f $workdir/1/$base1.quoted $workdir/1/$base1
+   sed -e 's/&/&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' $workdir/2/$base2 > $workdir/2/$base2.quoted
+   mv -f $workdir/2/$base2.quoted $workdir/2/$base2
+fi
+
+# ----------------------------------------------------------------------
 # Maybe strip preamble (title, boilerplate and table of contents) and
 # postamble (Intellectual Property Statement, Disclaimer etc)
 # ----------------------------------------------------------------------
@@ -1086,6 +1103,13 @@ fi
 if [ $optwdiff -gt 0 ]; then
    wdiff -a 1/$base1 2/$base2
 fi
+if [ $opthwdiff -gt 0 ]; then
+    echo "<html><head><title>wdiff $base1 $base2</title></head><body>"		>  $tempout
+    echo "<pre>"								>> $tempout
+    wdiff -w "<strike><font color='red'>" -x "</font></strike>" -y "<strong><font color='green'>" -z "</font></strong>" 1/$base1 2/$base2 >> $tempout
+    echo "</pre>"								>> $tempout
+    echo "</body></html>"							>> $tempout
+fi
 
 if [ $optstdout -gt 0 ]; then
   cat $tempout
@@ -1103,7 +1127,9 @@ if [ $optkeep -eq 0 ]; then
    if [ -f $pagecache2 ]; then rm $pagecache2; fi
    rm -fr $workdir/1
    rm -fr $workdir/2
-   rm $workdir/diff
+   if [ -f $workdir/diff ]; then
+      rm $workdir/diff
+   fi
    rmdir $workdir
 else
    cd /tmp
