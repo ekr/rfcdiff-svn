@@ -95,6 +95,11 @@
 #
 # Log:
 #			
+#	12 May 2006	v1.31 - Fixed a bug where the last diff in
+#			--abdiff mode would not be output.  Tweaked the
+#			regexp which recognizes section headers in
+#			abdiff().
+#			
 #	05 May 2006	v1.30 - Changed -U<nnn> to -U <nnn> to work on Macs
 #			
 #	20 Dec 2005	v1.29 - Added --hwdiff switch, to give single-
@@ -271,8 +276,8 @@
 # End:
 #
 
-export version="1.30"
-export progdate="(05 May 2006)"
+export version="1.31"
+export progdate="(12 May 2006)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -774,7 +779,7 @@ BEGIN	{
 	   section = $1 " " $2;
 	   para = 0;
 	}
-/^ [0-9]+(\.[0-9]+)*\.? /	{
+/^  ? ? ?[0-9]+(\.[0-9]+)*\.? /	{
 	   section = "Section " $1;
 	   para = 0;
 	}
@@ -804,6 +809,15 @@ BEGIN	{
 	   sub(/^./, " ");
 	   newpara = newpara $0 "\n"
 	   inpara++;
+	}
+END	{
+	   if (inpara) {
+	      printf "\n%s, para. %s:\n", section, para;
+	      print "OLD:\n"
+	      print oldpara
+	      print "NEW:\n"
+	      print newpara
+	   }	
 	}
 '
 }
