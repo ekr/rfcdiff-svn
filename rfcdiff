@@ -95,6 +95,9 @@
 #
 # Log:
 #			
+#	01 Jun 2006	v1.32 - changed 'para.' to 'paragraph' in abdiff.
+#			Added new regexps for page headers in strip.		
+#			
 #	12 May 2006	v1.31 - Fixed a bug where the last diff in
 #			--abdiff mode would not be output.  Tweaked the
 #			regexp which recognizes section headers in
@@ -276,8 +279,8 @@
 # End:
 #
 
-export version="1.31"
-export progdate="(12 May 2006)"
+export version="1.32"
+export progdate="(01 Jun 2006)"
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -309,16 +312,19 @@ strip() {
 				{ gsub(/\r/, ""); }
 				{ gsub(/[ \t]+$/, ""); }
 
-/\[?[Pp]age [0-9ivx]+\]? *$/	{
+/\[?[Pp]age [0-9ivx]+\]?[ \t\f]*$/{ 
 				  match($0, /\[?[Pp]age [0-9ivx]+\]?/);
 				  print substr($0, RSTART+6, RLENGTH-7), outline > ENVIRON["pagecache" ENVIRON["which"]]
 				  next;
 				}
 /^[ \t]*\f/			{ newpage=1; next; }
-/^ *Internet.Draft.+[0-9]+ *$/	{ newpage=1; next; }
-/^ *INTERNET.DRAFT.+[0-9]+ *$/	{ newpage=1; next; }
+/^ *Internet.Draft.+[12][0-9][0-9][0-9] *$/	{ newpage=1; next; }
+/^ *INTERNET.DRAFT.+[12][0-9][0-9][0-9] *$/	{ newpage=1; next; }
+/^ *Draft.+[12][0-9][0-9][0-9] *$/		{ newpage=1; next; }
 /^RFC.+[0-9]+$/			{ newpage=1; next; }
 /^draft-[-a-z0-9_.]+.*[0-9][0-9][0-9][0-9]$/ { newpage=1; next; }
+/(Jan|Feb|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|Sep|Oct|Nov|Dec) (19[89][0-9]|20[0-9][0-9]) *$/ && pagelength < 3  { newpage=1; next; }
+newpage && $0 ~ /^ *draft-[-a-z0-9_.]+ *$/ { newpage=1; next; }
 /^[^ \t]/			{ sentence=1; }
 /[^ \t]/			{
 				   if (newpage) {
@@ -785,7 +791,7 @@ BEGIN	{
 	}
 /^ ?$/	{
 	   if (inpara) {
-	      printf "\n%s, para. %s:\n", section, para;
+	      printf "\n%s, paragraph %s:\n", section, para;
 	      print "OLD:\n"
 	      print oldpara
 	      print "NEW:\n"
@@ -812,7 +818,7 @@ BEGIN	{
 	}
 END	{
 	   if (inpara) {
-	      printf "\n%s, para. %s:\n", section, para;
+	      printf "\n%s, paragraph %s:\n", section, para;
 	      print "OLD:\n"
 	      print oldpara
 	      print "NEW:\n"
