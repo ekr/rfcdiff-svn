@@ -93,9 +93,205 @@
 #	The latest version is available from
 #		http://tools.ietf.org/tools/rfcdiff/
 #
+# Log:
+#	16 Sep 2009	v1.36 - the header and footer stripping code in idnits
+#			is better than the one used in 1.35.  Incorporating that
+#			here instead.
+#
+#	27 Aug 2008	v1.35 - 'tail' doesn't accept a plain '+3' for instance		
+#			any more.  Change to using 'tail -n +3'.
+#			
+#	17 Jul 2007     v1.34 - Added quotes around file names to be able to
+#			handle filenames containing whitespace, and some
+#			other changes associated with files containing
+#			whitespace and running on *BSD.
+#			
+#	01 Jun 2006	v1.32 - changed 'para.' to 'paragraph' in abdiff.
+#			Added new regexps for page headers in strip.		
+#			
+#	12 May 2006	v1.31 - Fixed a bug where the last diff in
+#			--abdiff mode would not be output.  Tweaked the
+#			regexp which recognizes section headers in
+#			abdiff().
+#			
+#	05 May 2006	v1.30 - Changed -U<nnn> to -U <nnn> to work on Macs
+#			
+#	20 Dec 2005	v1.29 - Added --hwdiff switch, to give single-
+#			columnt html output, as in Bill Fenner's htmlwdiff
+#	
+#	20 Dec 2005	v1.28 - Changed font-size units from pt to em.
+#			Made white-space ignoring somewhat less aggressive.
+#	
+#	04 Aug 2005	v1.27 - Added -f option to some mv commands to
+#			handle read-only input files.  Added statistics
+#			output.
+#			
+#	29 Jul 2005	v1.26 - Removed spurious empty output line.
+#			Added guard against files beginning with "-"
+#			for mv.
+#			
+#	11 Jul 2005	v1.25 - Tweaked the regexps for --bodystrip and
+#			recognition of wdiff version, both thanks to
+#			Bruce Lilly.  Tweak to handle directory names
+#			with whitespace, thanks to Thomas Morin.
+#			
+#	16 Jun 2005	v1.24 - changed to use uppercase "-U" option to
+#			diff, for MacOS X compatibility. (Thanks to
+#			Lars Eggert.)
+#			
+#	24 Jan 2005	v1.23 - Fixed a bug where html entity codes was
+#			broken up by diff markup.
+#			
+#	06 Jan 2005	v1.22 - Tweaked a style setting	
+#			
+#	10 Dec 2004	v1.21 - Added anchor for each diff, in order	
+#			for it to be possible to create URLs refering
+#			to individual diffs.
+#			
+#	09 Dec 2004	v1.20 -	fixed the same bug again, a bit better
+#			this time :-)
+#			
+#	06 Dec 2004	v1.19 - fixed a bug introduced in v1.18, where	
+#			lines of diffs with linebreaks would not be
+#			shown when using the --width option.
+#			
+#	02 Dec 2004	v1.18 - On some systems, awk is the original		
+#			Aho, Weinberger, Kernighan awk. We need gawk
+#			or at least nawk, so now we look for those.
+#			If not found, we try to run with awk anyway,
+#			but that will probably not work...
+#			Nawk won't accept continuation lines inside
+#			strings, so all multiline strings broken up.
+#			Also changed the linebreaking and page 
+#			formatting somewhat.
+#			
+#	16 Nov 2004	v1.17 - Minor bugfix for cygwin - "cd -" was
+#			reported not to work; working around that.
+#	
+#	10 Nov 2004	v1.16 - Minor bugfix - properly removing temp
+#			outfile when using --stdout
+#	
+#	20 Sep 2004	v1.15 - Improved the page header/footer
+#			stripping to handle more cases of paragraphs
+#			split over page breaks, and a greater variety
+#			of whitespace in the page break.  Added some
+#			diagnostic information to the generated html
+#			diff, in comments.  Added --stdout option.
+#	
+#	04 Sep 2004	v1.14 - Cleaned up html in a few places so it's
+#			now clean again.
+#	
+#	11 Jun 2004	v1.13 - Tweaked the regexp to match section
+#			numbers slightly.  Added -wd option to diff
+#			also for the ab (rfc-editor before/after) diff.
+#	
+#	07 Jun 2004	v1.12 - Added --abdiff option, to produce
+#			OLD/NEW output suitable for the RFC-Editor
+#	
+#	03 Apr 2004	v1.11 - Added --nostrip option.  Fixed a bug
+#			where a diff on the very first line would not
+#			be shown.
+#	
+#	17 Mar 2004	v1.10 - Minor tweaks to handle malformed drafts
+#			better.  Added firefox to browser list.
+#	
+#	23 Feb 2004	v1.09 - Started work on an Old/New diff mode,
+#			suitable for diff summaries to mailing lists,
+#			issue trackers, reviewers & rfc-editor.  Not
+#			complete yet.
+#	
+#	22 Feb 2004	v1.08 - Added --body option to exclude
+#			boilerplate and table of contents changes.
+#	
+#	21 Feb 2004	v1.07 - Added diagnostic message when wdiff not
+#			found or wdiff version not recognised
+#	
+#	01 Feb 2004	v1.06 - Added --linenum option to provide line numbers
+#			on each line. Simplified linebreaking markup.
+#			Some mild refactoring.
+#	
+#	29 Jan 2004	v1.05 - Now providing page and line numbers for
+#			both old and new document versions at the start
+#			of each change section.
+#			The line-breaking code is still buggy...
+#	
+#	25 Jan 2004	v1.04 - Added line numbers for the case when no page
+#			numbers are available
+#	
+#	24 Jan 2004	v1.03 - Fixed a line coloring bug introduced in v1.02
+#	
+#	22 Jan 2004	v1.02 - Added line-breaking functionality through
+#			the --width option.  Experimental -- may be
+#			buggy.
+#	
+#	17 Dec 2003	v1.01 - Fixed a bug where diffs with no text
+#			occurring after the last change would be shown
+#			without the last change. Added some debug
+#			functionality to be able to track this one down.
+#	
+#	14 Dec 2003	v1.00 - Bumped version number to 1.00
+#	
+#	 6 Dec 2003	v0.42 - Added html diff output for the
+#			identical files case.
+#	
+#	 5 Dec 2003	v0.41 - Added --info option
+#	
+#	25 Nov 2003	v0.40 - Added the use of wget (if available) to
+#			pull down remote source files (http: or ftp:)
+#	
+#	20 Nov 2003	v0.39 - Added 'End of changes' line at the end
+#			of html diff. Added a test on wdiff producing
+#			reasonable output with --version option, to
+#			avoid old broken wdiff versions.
+#	
+#	20 Nov 2003	v0.38 - Added --keep option, to keep temporary
+#			files.
+#	
+#	20 Nov 2003	v0.37 - Added --nowdiff option, to make --html
+#			*not* use wdiff even if it is available.
+#	
+#	20 Nov 2003	v0.36 - Added --browse option, to optionally
+#			start a browser to show html diff output.
+#			Refined how we look for a wdiff binary.
+#	
+#	18 Nov 2003	v0.35 - minor tweaks to header/footer stripping
+#			regexps. Changed color marking of differences.
+#			Other minor tweaks and comment updates.
+#	
+#	16 Nov 2003	v0.34 - removed listing of environment when no
+#			files were given on the command line. Added
+#			help text. Added the possibility of using wdiff to get
+#			the changed words in a change block highlighted.
+#	
+#	23 Oct 2003	v0.33 - using different dir's for the stripped
+#			files, to be able to diff files with the same
+#			basename.
+#	
+#	 2 Sep 2003	v0.32 - fixed spurious error message when using
+#			--wdiff option
+#	
+#	 1 Sep 2003	v0.31 - not touching the original files, using
+#			temporary directory for work files.
+#	
+#	29 Aug 2003	v0.30 - Removed explicit font size for output.
+#			Changed regexp for page start (now accepting space
+#			in "Internet Draft".
+#	
+#	16 Apr 2003	v0.29 - added wdiff support
+#	
+#	 6 Mar 2003	v0.28 - added --html, --chbars and --diff switches
+#	
+#	 3 Mar 2003	v0.27 - Changed page regexp to accept lowercase
+#				'p'.
+#	
+#	 2 Feb 2003	Expanded to provide side-by-side html diff, in
+#			addition to changebars in .txt files
+#
+# End:
+#
 
-export version="1.35"
-export progdate="(27 Aug 2008)"
+export version="1.36"
+export progdate=""
 export prelines="10"
 export basename=$(basename $0)
 export workdir="/tmp/$basename-$$"
@@ -126,22 +322,38 @@ strip() {
   $AWK '
 				{ gsub(/\r/, ""); }
 				{ gsub(/[ \t]+$/, ""); }
-
-/\[?[Pp]age [0-9ivx]+\]?[ \t\f]*$/{ 
-				  match($0, /\[?[Pp]age [0-9ivx]+\]?/);
-				  print substr($0, RSTART+6, RLENGTH-7), outline > ENVIRON["pagecache" ENVIRON["which"]]
-				  next;
+				{ pagelength++; }
+/\[?[Pp]age [0-9ivx]+\]?[ \t\f]*$/	{
+				    match($0, /[Pp]age [0-9ivx]+/);
+				    num = substr($0, RSTART+5, RLENGTH-5);
+				    print num, outline > ENVIRON["pagecache" ENVIRON["which"]]
+				    pagelength = 0;
 				}
-/^[ \t]*\f/			{ newpage=1; next; }
-/^ *Internet.Draft.+[12][0-9][0-9][0-9] *$/	{ newpage=1; next; }
-/^ *INTERNET.DRAFT.+[12][0-9][0-9][0-9] *$/	{ newpage=1; next; }
-/^ *Draft.+[12][0-9][0-9][0-9] *$/		{ newpage=1; next; }
-/^RFC.+[0-9]+$/			{ newpage=1; next; }
-/^draft-[-a-z0-9_.]+.*[0-9][0-9][0-9][0-9]$/ { newpage=1; next; }
+/\f/				{ newpage=1;
+				  pagelength=1;
+				}
+/\f$/				{
+				    # a form feed followed by a \n does not contribute to the
+				    # line count.  (But a \f followed by something else does.)
+				    pagelength--;
+				}
+/\f/				{ next; }
+/\[?[Pp]age [0-9ivx]+\]?[ \t\f]*$/		{ preindent = indent; next; }
+
+/^ *Internet.Draft.+[12][0-9][0-9][0-9] *$/ && (FNR > 15)	{ newpage=1; next; }
+/^ *INTERNET.DRAFT.+[12][0-9][0-9][0-9] *$/ && (FNR > 15)	{ newpage=1; next; }
+/^ *Draft.+(  +)[12][0-9][0-9][0-9] *$/	    && (FNR > 15)	{ newpage=1; next; }
+/^RFC[ -]?[0-9]+.*(  +)[12][0-9][0-9][0-9]$/ && (FNR > 15)	{ newpage=1; next; }
+/^draft-[-a-z0-9_.]+.*[0-9][0-9][0-9][0-9]$/ && (FNR > 15)	{ newpage=1; next; }
 /(Jan|Feb|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|Sep|Oct|Nov|Dec) (19[89][0-9]|20[0-9][0-9]) *$/ && pagelength < 3  { newpage=1; next; }
 newpage && $0 ~ /^ *draft-[-a-z0-9_.]+ *$/ { newpage=1; next; }
-/^[^ \t]/			{ sentence=1; }
+
+/^[ \t]+\[/			{ sentence=1; }
 /[^ \t]/			{
+				   indent = match($0, /[^ ]/);
+				   if (indent < preindent) {
+				      sentence = 1;
+				   }
 				   if (newpage) {
 				      if (sentence) {
 					 outline++; print "";
@@ -154,8 +366,13 @@ newpage && $0 ~ /^ *draft-[-a-z0-9_.]+ *$/ { newpage=1; next; }
 				   haveblank=0;
 				   sentence=0;
 				   newpage=0;
+
+				   line = $0;
+				   sub(/^ *\t/, "        ", line);
+				   thiscolumn = match(line, /[^ ]/);
 				}
 /[.:][ \t]*$/			{ sentence=1; }
+/\(http:\/\/trustee\.ietf\.org\/license-info\)\./ { sentence=0; }
 /^[ \t]*$/			{ haveblank=1; next; }
 				{ outline++; print; }
 ' "$1"
