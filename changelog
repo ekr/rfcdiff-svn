@@ -1,9 +1,24 @@
+rfcdiff (1.37)
+
+  * Moved the changelog out of source file and into a proper changelog
+    file.
+
+  * Refined the regexp identifying RFC page header lines
+
+  * Use diff -Bd instead of diff -Bwd (don't ignore as much whitespace),
+    important to see differences in ascii figures.
+
+  * Fixed a problem where &lt; and &gt; strings could be broken up by
+    inserted delete or insert <span/> tags.    
+
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Jan 2010 14:33:24 +0100
+
 rfcdiff (1.36)
 
   * The header and footer stripping code in idnits is better than the
     one used in 1.35.  Incorporating that here instead.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  04 Jan 2010 14:45:40 +0100
+ -- Henrik Levkowetz <henrik@levkowetz.com>  04 Jan 2010 14:51:13 +0100
 
 rfcdiff (1.35)
 
@@ -46,28 +61,28 @@ rfcdiff (1.29)
   * Added --hwdiff switch, to give single- columnt html output, as in
     Bill Fenner's htmlwdiff
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  20 Dec 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Dec 2005 00:00:00 +0100
 
 rfcdiff (1.28)
 
   * Changed font-size units from pt to em.  Made white-space ignoring
     somewhat less aggressive.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  20 Dec 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Dec 2005 00:00:00 +0100
 
 rfcdiff (1.27)
 
   * Added -f option to some mv commands to handle read-only input files.
     Added statistics output.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  04 Aug 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  04 Aug 2005 00:00:00 +0100
 
 rfcdiff (1.26)
 
   * Removed spurious empty output line.  Added guard against files
     beginning with "-" for mv.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  29 Jul 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  29 Jul 2005 00:00:00 +0100
 
 rfcdiff (1.25)
 
@@ -75,46 +90,46 @@ rfcdiff (1.25)
     version, both thanks to Bruce Lilly.  Tweak to handle directory
     names with whitespace, thanks to Thomas Morin.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  11 Jul 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  11 Jul 2005 00:00:00 +0100
 
 rfcdiff (1.24)
 
   * Changed to use uppercase "-U" option to diff, for MacOS X
     compatibility. (Thanks to Lars Eggert.)
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  16 Jun 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  16 Jun 2005 00:00:00 +0100
 
 rfcdiff (1.23)
 
   * Fixed a bug where html entity codes was broken up by diff markup.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  24 Jan 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  24 Jan 2005 00:00:00 +0100
 
 rfcdiff (1.22)
 
   * Tweaked a style setting 
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  06 Jan 2005
+ -- Henrik Levkowetz <henrik@levkowetz.com>  06 Jan 2005 00:00:00 +0100
 
 rfcdiff (1.21)
 
   * Added anchor for each diff, in order for it to be possible to create
     URLs refering to individual diffs.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  10 Dec 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  10 Dec 2004 00:00:00 +0100
 
 rfcdiff (1.20)
 
   * Fixed the same bug again, a bit better this time :-)
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  09 Dec 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  09 Dec 2004 00:00:00 +0100
 
 rfcdiff (1.19)
 
   * Fixed a bug introduced in v1.18, where lines of diffs with
     linebreaks would not be shown when using the --width option.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  06 Dec 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  06 Dec 2004 00:00:00 +0100
 
 rfcdiff (1.18)
 
@@ -125,20 +140,20 @@ rfcdiff (1.18)
     multiline strings broken up.  Also changed the linebreaking and page
     formatting somewhat.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  02 Dec 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  02 Dec 2004 00:00:00 +0100
 
 rfcdiff (1.17)
 
   * Minor bugfix for cygwin - "cd -" was reported not to work; working
     around that.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  16 Nov 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  16 Nov 2004 00:00:00 +0100
 
 rfcdiff (1.16)
 
   * Minor bugfix - properly removing temp outfile when using --stdout
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  10 Nov 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  10 Nov 2004 00:00:00 +0100
 
 rfcdiff (1.15)
 
@@ -147,41 +162,41 @@ rfcdiff (1.15)
     whitespace in the page break.  Added some diagnostic information to
     the generated html diff, in comments.  Added --stdout option.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  20 Sep 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Sep 2004 00:00:00 +0100
 
 rfcdiff (1.14)
 
   * Cleaned up html in a few places so it's now clean again.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  04 Sep 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  04 Sep 2004 00:00:00 +0100
 
 rfcdiff (1.13)
 
   * Tweaked the regexp to match section numbers slightly.  Added -wd
     option to diff also for the ab (rfc-editor before/after) diff.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  11 Jun 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  11 Jun 2004 00:00:00 +0100
 
 rfcdiff (1.12)
 
   * Added --abdiff option, to produce OLD/NEW output suitable for the
     RFC-Editor
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  07 Jun 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  07 Jun 2004 00:00:00 +0100
 
 rfcdiff (1.11)
 
   * Added --nostrip option.  Fixed a bug where a diff on the very first
     line would not be shown.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  03 Apr 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  03 Apr 2004 00:00:00 +0100
 
 rfcdiff (1.10)
 
   * Minor tweaks to handle malformed drafts better.  Added firefox to
     browser list.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  17 Mar 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  17 Mar 2004 00:00:00 +0100
 
 rfcdiff (1.09)
 
@@ -189,28 +204,28 @@ rfcdiff (1.09)
     mailing lists, issue trackers, reviewers & rfc-editor.  Not complete
     yet.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  23 Feb 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  23 Feb 2004 00:00:00 +0100
 
 rfcdiff (1.08)
 
   * Added --body option to exclude boilerplate and table of contents
     changes.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  22 Feb 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  22 Feb 2004 00:00:00 +0100
 
 rfcdiff (1.07)
 
   * Added diagnostic message when wdiff not found or wdiff version not
     recognised
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  21 Feb 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  21 Feb 2004 00:00:00 +0100
 
 rfcdiff (1.06)
 
   * Added --linenum option to provide line numbers on each line.
     Simplified linebreaking markup.  Some mild refactoring.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  01 Feb 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  01 Feb 2004 00:00:00 +0100
 
 rfcdiff (1.05)
 
@@ -218,26 +233,26 @@ rfcdiff (1.05)
     versions at the start of each change section.  The line-breaking
     code is still buggy...
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  29 Jan 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  29 Jan 2004 00:00:00 +0100
 
 rfcdiff (1.04)
 
   * Added line numbers for the case when no page numbers are available
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  25 Jan 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  25 Jan 2004 00:00:00 +0100
 
 rfcdiff (1.03)
 
   * Fixed a line coloring bug introduced in v1.02
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  24 Jan 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  24 Jan 2004 00:00:00 +0100
 
 rfcdiff (1.02)
 
   * Added line-breaking functionality through the --width option.
     Experimental -- may be buggy.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  22 Jan 2004
+ -- Henrik Levkowetz <henrik@levkowetz.com>  22 Jan 2004 00:00:00 +0100
 
 rfcdiff (1.01)
 
@@ -245,32 +260,32 @@ rfcdiff (1.01)
     would be shown without the last change. Added some debug
     functionality to be able to track this one down.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  17 Dec 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  17 Dec 2003 00:00:00 +0100
 
 rfcdiff (1.00)
 
   * Bumped version number to 1.00
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  14 Dec 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  14 Dec 2003 00:00:00 +0100
 
 rfcdiff (0.42)
 
   * Added html diff output for the identical files case.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  6 Dec 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  6 Dec 2003 00:00:00 +0100
 
 rfcdiff (0.41)
 
   * Added --info option
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  5 Dec 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  5 Dec 2003 00:00:00 +0100
 
 rfcdiff (0.40)
 
   * Added the use of wget (if available) to pull down remote source
     files (http: or ftp:)
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  25 Nov 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  25 Nov 2003 00:00:00 +0100
 
 rfcdiff (0.39)
 
@@ -278,34 +293,34 @@ rfcdiff (0.39)
     wdiff producing reasonable output with --version option, to avoid
     old broken wdiff versions.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003 00:00:00 +0100
 
 rfcdiff (0.38)
 
   * Added --keep option, to keep temporary files.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003 00:00:00 +0100
 
 rfcdiff (0.37)
 
   * Added --nowdiff option, to make --html *not* use wdiff even if it is
     available.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003 00:00:00 +0100
 
 rfcdiff (0.36)
 
   * Added --browse option, to optionally start a browser to show html
     diff output.  Refined how we look for a wdiff binary.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  20 Nov 2003 00:00:00 +0100
 
 rfcdiff (0.35)
 
   * Minor tweaks to header/footer stripping regexps. Changed color
     marking of differences.  Other minor tweaks and comment updates.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  18 Nov 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  18 Nov 2003 00:00:00 +0100
 
 rfcdiff (0.34)
 
@@ -313,56 +328,56 @@ rfcdiff (0.34)
     command line. Added help text. Added the possibility of using wdiff
     to get the changed words in a change block highlighted.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  16 Nov 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  16 Nov 2003 00:00:00 +0100
 
 rfcdiff (0.33)
 
   * Using different dir's for the stripped files, to be able to diff
     files with the same basename.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  23 Oct 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  23 Oct 2003 00:00:00 +0100
 
 rfcdiff (0.32)
 
   * Fixed spurious error message when using --wdiff option
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  2 Sep 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  2 Sep 2003 00:00:00 +0100
 
 rfcdiff (0.31)
 
   * Not touching the original files, using temporary directory for work
     files.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  1 Sep 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  1 Sep 2003 00:00:00 +0100
 
 rfcdiff (0.30)
 
   * Removed explicit font size for output.  Changed regexp for page
     start (now accepting space in "Internet Draft".
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  29 Aug 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  29 Aug 2003 00:00:00 +0100
 
 rfcdiff (0.29)
 
   * Added wdiff support
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  16 Apr 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  16 Apr 2003 00:00:00 +0100
 
 rfcdiff (0.28)
 
   * Added --html, --chbars and --diff switches
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  6 Mar 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  6 Mar 2003 00:00:00 +0100
 
 rfcdiff (0.27)
 
   * Changed page regexp to accept lowercase 'p'.
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  3 Mar 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  3 Mar 2003 00:00:00 +0100
 
 rfcdiff (0.26)
 
   * Expanded to provide side-by-side html diff, in addition to
     changebars in .txt files
 
- -- Henrik Levkowetz <henrik@levkowetz.com>  2 Feb 2003
+ -- Henrik Levkowetz <henrik@levkowetz.com>  2 Feb 2003 00:00:00 +0100
