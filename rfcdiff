@@ -22,6 +22,14 @@
 #	
 #	--hwdiff	Produce html-wrapped coloured wdiff output
 #	
+#	--oldcolour COLOURNAME	Colour for new file in hwdiff (default is "green")
+#	--oldcolor COLORNAME	Color for old file in hwdiff (default is "red")
+#
+#	--newcolour COLOURNAME	Colour for new file in hwdiff (default is "green")
+#	--newcolor COLORNAME	Color for new file in hwdiff (default is "green")
+#
+#	--larger        Make difference text in hwdiff slightly larger
+#
 #	--browse	Show html output in browser
 #	
 #	--keep		Don't delete temporary workfiles
@@ -94,7 +102,7 @@
 #		http://tools.ietf.org/tools/rfcdiff/
 #
 
-export version="1.38"
+export version="1.39"
 export progdate=""
 export prelines="10"
 export basename=$(basename $0)
@@ -285,9 +293,9 @@ function header(file1, file2) {
    url1 = file1;
    url2 = file2;
    if (optlinks) {
-      if (file1 ~ /^draft-/) { url1 = sprintf("<a href=\"/id/%s\" style=\"color:#008\">%s</a>", file1, file1); }
+      if (file1 ~ /^draft-/) { url1 = sprintf("<a href=\"/html/%s\" style=\"color:#008\">%s</a>", file1, file1); }
       if (file1 ~ /^draft-/) { prev = sprintf("<a href=\"/rfcdiff?url2=%s\" style=\"color:#008; text-decoration:none;\">&lt;</a>", file1); }
-      if (file2 ~ /^draft-/) { url2 = sprintf("<a href=\"/id/%s\" style=\"color:#008\">%s</a>", file2, file2); }
+      if (file2 ~ /^draft-/) { url2 = sprintf("<a href=\"/html/%s\" style=\"color:#008\">%s</a>", file2, file2); }
       if (file2 ~ /^draft-/) { nxt  = sprintf("<a href=\"/rfcdiff?url1=%s\" style=\"color:#008; text-decoration:none;\">&gt;</a>", file2) }
    }   
    printf "" \
@@ -765,6 +773,7 @@ die() {
 opthtml=1; optdiff=0; optchbars=0; optwdiff=0; optshow=0; optnowdiff=0;
 optkeep=0; optinfo=0; optwidth=0;  optnums=0;  optbody=0; optabdiff=0;
 optstrip=1; opthwdiff=0; optlinks=0;
+optoldcolour="red"; optnewcolour="green"; optlarger=""
 optstdout=0;
 
 while [ $# -gt 0 ]; do
@@ -785,11 +794,19 @@ while [ $# -gt 0 ]; do
       --info)	optinfo=1; keyword=$2; shift;;
       --help)	optinfo=1; keyword="Usage";;
       --width)	optwidth=$2; shift;;
+      --oldcolor)     optoldcolour=$2; shift;;
+      --oldcolour)    optoldcolour=$2; shift;;
+      --newcolor)     optnewcolour=$2; shift;;
+      --newcolour)    optnewcolour=$2; shift;;
+      --larger)       optlarger='size="+1"';;
       --linenum)optnums=1;;
       --body)	optbody=1;;
       --nostrip)optstrip=0; optbody=0;;
       --stdout) optstdout=1;;
       --links)  optlinks=1;;
+      --no-space-changes) optnospacechange=1;;
+      --ignore-whitespace) optignorewhite=1;;
+      --wdiff-args) optwdiffargs=$2; shift;;
       --)	shift; break;;
 
       -v) echo "$basename $version"; exit 0;;
@@ -970,7 +987,7 @@ if cmp 1/"$base1" 2/"$base2" >/dev/null; then
 fi
 
 if [ $opthtml -gt 0 ]; then
-   diff -Bd -U $prelines 1/"$base1" 2/"$base2" | tee $workdir/diff | htmldiff > "$tempout"
+   diff -Bd ${optnospacechange:+-b} ${optignorewhite:+-w} -U $prelines 1/"$base1" 2/"$base2" | tee $workdir/diff | htmldiff > "$tempout"
 fi
 if [ $optchbars -gt 0 ]; then
    diff -Bwd -U 10000 1/"$base1" 2/"$base2" | tee $workdir/diff | grep -v "^-" | tail -n +3 | sed 's/^+/|/' > "$tempout"
@@ -982,12 +999,14 @@ if [ $optabdiff -gt 0 ]; then
    diff -wd -U 1000 1/"$base1" 2/"$base2" | tee $workdir/diff | abdiff
 fi
 if [ $optwdiff -gt 0 ]; then
-   wdiff -a 1/"$base1" 2/"$base2"
+   wdiff -a $optwdiffargs 1/"$base1" 2/"$base2"
 fi
 if [ $opthwdiff -gt 0 ]; then
-    echo "<html><head><title>wdiff "$base1" "$base2"</title></head><body>"		>  "$tempout"
+    echo "<html><head><title>wdiff "$base1" "$base2"</title></head><body>"	>  "$tempout"
     echo "<pre>"								>> "$tempout"
-    wdiff -w "<strike><font color='red'>" -x "</font></strike>" -y "<strong><font color='green'>" -z "</font></strong>" 1/"$base1" 2/"$base2" >> "$tempout"
+    wdiff -w "<strike><font color='$optoldcolour' $optlarger>" -x "</font></strike>"	\
+          -y "<strong><font color='$optnewcolour' $optlarger>" -z "</font></strong>"	\
+	  1/"$base1" 2/"$base2"							>> "$tempout"
     echo "</pre>"								>> "$tempout"
     echo "</body></html>"							>> "$tempout"
 fi
