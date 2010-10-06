@@ -1,3 +1,10 @@
+rfcdiff (1.40)
+
+  * Changed the rfcdiff.pyht upload script to handle upload files with
+    Mac line-endings (\r).
+
+ -- Henrik Levkowetz <henrik@levkowetz.com>  16 Sep 2010 14:24:00 +0200
+
 rfcdiff (1.39)
 
   * New options for diff colours and diff text size for hwdiff, from
