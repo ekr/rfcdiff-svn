@@ -144,7 +144,7 @@ distinfo: $(tool)-$(version).tgz diff
 	wc -c		$< | awk '{ printf "SIZE (%s) = %s\n", $$2, $$1; }'	>> $@
 
 upload:: $(tool) $(tool)-v$(version) $(webpages) $(tool)-$(version).tgz $(tool)-$(version).diff.html $(scripts) control distinfo
-	rsync -avuz $^ /www/tools.ietf.org/tools/$(tool)/
+	rsync -avuz --exclude /tmp/ $^ /www/tools.ietf.org/tools/$(tool)/
 	toolpush /www/tools.ietf.org/tools/$(tool)/
 	toolsfeed control changelog /www/tools.ietf.org/tools/atomfeed.xml
 	toolpush /www/tools.ietf.org/tools/atomfeed.xml
