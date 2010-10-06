@@ -102,7 +102,7 @@
 #		http://tools.ietf.org/tools/rfcdiff/
 #
 
-export version="1.39"
+export version="1.40"
 export progdate=""
 export prelines="10"
 export basename=$(basename $0)
