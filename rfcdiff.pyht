@@ -121,8 +121,11 @@
 		    while 1:
 			line = uploadfile.readline()
 			if not line: break
-			outputfile.write(line)
-			linecount1 += 1
+			# try to handle files with mac line endings well:
+			for l in line.rstrip("\n\r").split("\r"):
+			    outputfile.write(l.rstrip("\n\r"))
+			    outputfile.write("\n")
+			    linecount1 += 1
 		    outputfile.close()
 		    os.chmod(uploadname, 0666)
 		    filename1 = uploadname
@@ -164,8 +167,11 @@
 		    while 1:
 			line = uploadfile.readline()
 			if not line: break
-			outputfile.write(line)
-			linecount2 += 1
+			# try to handle files with mac line endings well:
+			for l in line.rstrip("\n\r").split("\r"):
+			    outputfile.write(l.rstrip("\n\r"))
+			    outputfile.write("\n")
+			    linecount2 += 1
 		    outputfile.close()
 		    if not linecount2:
 			uploadmsg = "File 2 seems to be empty..."
