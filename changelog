@@ -1,3 +1,11 @@
+rfcdiff (1.41)
+
+  * Under OS X 10.6.6 (at least), if gawk and nawk are unavailable, 
+    earlier versions fails silently.  Fail with a meaningful error
+    message instead.
+
+ -- Henrik Levkowetz <henrik@levkowetz.com>  23 Feb 2011 12:40:56 +0200
+
 rfcdiff (1.40)
 
   * Changed the rfcdiff.pyht upload script to handle upload files with
