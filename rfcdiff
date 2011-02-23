@@ -102,7 +102,7 @@
 #		http://tools.ietf.org/tools/rfcdiff/
 #
 
-export version="1.40"
+export version="1.41"
 export progdate=""
 export prelines="10"
 export basename=$(basename $0)
@@ -974,6 +974,14 @@ diffbin=$(lookfor diff)
 export diffbin
 diffver=$(diff --version | head -n 1)
 export diffver
+
+# ----------------------------------------------------------------------
+# Check that we don't have a broken awk
+# ----------------------------------------------------------------------
+if [ $opthtml -gt 0 -a "${uname%% *}" == "Darwin" -a "$awkver" == "awk version 20070501" ]; then
+    echo -e  "\n  Oops.  Awk version 20070501 on OS X doesn't work with rfcdiff's html mode.\n  To make rfcdiff work, you could install Gnu Awk (gawk), for instance using\n  MacPorts, http://www.macports.org/."
+    exit 1
+fi
 
 # ----------------------------------------------------------------------
 # Do diff
