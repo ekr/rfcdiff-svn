@@ -1,5 +1,6 @@
 <?python # -*- html -*-
     import re, os, time, string, stat, sys
+    from raw2event import attrib
 
     path  = os.path.realpath(".")
     tool  = os.path.basename(path)
@@ -24,6 +25,16 @@
 	elif "url2" in args and type(args["url2"]) is str and len(args["url2"]) > 0:
 	    uploadsrc2 = args["url2"]
 	    if uploadsrc2.startswith("draft-"):
+		rev_match = re.search("(.*-)([0-9][0-9])(.txt)?$", uploadsrc2)
+		if not rev_match:
+		    name_match = re.search("^(.*?)(.txt)?$", uploadsrc2)
+		    if name_match:
+			draft = name_match.group(1)
+			try:
+			    attrs = attrib.readline("/www/tools.ietf.org/draft/%s/now" % draft)
+			    uploadsrc2 = "%s-%s" % (draft, attrs.docrev.string)
+			except:
+			    pass
 	        uploadsrc2 = "http://tools.ietf.org/id/"+uploadsrc2;
 		if not uploadsrc2.endswith(".txt"):
 		    uploadsrc2 += ".txt"
@@ -74,8 +85,7 @@
 				if re.search("-[0-9][0-9]$", draft):
 				    draft = draft[:-3]
 				try:
-				    import raw2event.attrib
-				    attrs = raw2event.attrib.readline("/www/tools.ietf.org/draft/%s/now" % draft)
+				    attrs = attrib.readline("/www/tools.ietf.org/draft/%s/now" % draft)
 				    if "docreplaces" in attrs.__dict__:
 					uploadsrc1= "http://tools.ietf.org/id/%s" % attrs.docreplaces
 				except Exception, e:
@@ -87,8 +97,7 @@
 		    num = int(match.group(2))
 		    if num > 0:
 			try:
-			    import raw2event.attrib
-			    attrs = raw2event.attrib.readline("/www/tools.ietf.org/draft/rfc%s/now" % num)
+			    attrs = attrib.readline("/www/tools.ietf.org/draft/rfc%s/now" % num)
 			    if "document" in attrs.__dict__:
 				uploadsrc1= "http://tools.ietf.org/id/%s" % attrs.document
 			except Exception, e:
@@ -102,9 +111,10 @@
 	if uploadsrc1:
 	    uploadname = basename(re.sub("\\\\","/", uploadsrc1))
 	    if re.match("^[a-zA-Z0-9_.,-]*$", uploadname):
-		if uploadsrc1.startswith("http://") or uploadsrc1.startswith("ftp://"):
+		if uploadsrc1.startswith("http://") or uploadsrc1.startswith("ftp://") or uploadsrc1.startswith("https://"):
 		    try:
-			import urllib
+			import httplib
+			import urllib2 as urllib
 			uploadfile = urllib.urlopen(uploadsrc1)
 		    except:
 			uploadmsg = "Couldn't retrieve file 1 (%s) - please check the URL." % uploadsrc1
@@ -116,21 +126,24 @@
 		else:
 		    uploadmsg = "Couldn't retrieve file 1 (%s) - unknown URL format." % uploadsrc1
 		if uploadname and uploadfile:
-		    uploadname = os.path.join("tmp/1", uploadname)
-		    outputfile = open(uploadname, "w")
-		    while 1:
-			line = uploadfile.readline()
-			if not line: break
-			# try to handle files with mac line endings well:
-			for l in line.rstrip("\n\r").split("\r"):
-			    outputfile.write(l.rstrip("\n\r"))
-			    outputfile.write("\n")
-			    linecount1 += 1
-		    outputfile.close()
-		    os.chmod(uploadname, 0666)
-		    filename1 = uploadname
-		    if not linecount1:
-			uploadmsg = "File 1 seems to be empty"
+		    if not hasattr(uploadfile, "info") or uploadfile.info()["content-type"].startswith("text/plain"):
+			uploadname = os.path.join("tmp/1", uploadname)
+			outputfile = open(uploadname, "w")
+			while linecount1 < 32000: # arbitrary number of lines
+			    line = uploadfile.readline()
+			    if not line: break
+			    # try to handle files with mac line endings well:
+			    for l in line.rstrip("\n\r").split("\r"):
+				outputfile.write(l.rstrip("\n\r"))
+				outputfile.write("\n")
+				linecount1 += 1
+			outputfile.close()
+			os.chmod(uploadname, 0666)
+			filename1 = uploadname
+			if not linecount1:
+			    uploadmsg = "File 1 seems to be empty"
+		    else:
+			uploadmsg = "The mime-type of file 1 is '%s', but 'text/plain' was expected" % uploadfile.info()["content-type"]
 	    else:
 		uploadmsg = "Upload aborted, got (%s) but a text file without odd characters in the name is expected here." % uploadname
 	else:
@@ -139,8 +152,9 @@
 	if uploadsrc2:
 	    uploadname = basename(re.sub("\\\\","/", uploadsrc2))
 	    if re.match("^[a-zA-Z0-9_.,-]*$", uploadname):
-		if uploadsrc2.startswith("http://") or uploadsrc2.startswith("ftp://"):
+		if uploadsrc2.startswith("http://") or uploadsrc2.startswith("ftp://") or uploadsrc2.startswith("https://"):
 		    try:
+			import httplib
 			import urllib2 as urllib
 			uploadfile = urllib.urlopen(uploadsrc2)
 		    except:
@@ -153,7 +167,7 @@
 			    uploadsrc2b = uploadsrc2.replace("http://tools.ietf.org/id/", "http://www.ietf.org/internet-drafts/")
 			    try:
 				uploadfile = urllib.urlopen(uploadsrc2b)
-			    except urllib.HTTPError:
+			    except:
 				pass
 			    
 		elif "filename2" in args and form["filename2"].file:
@@ -162,60 +176,68 @@
 		    uploadmsg = "Couldn't retrieve file 2 (%s) - unknown URL format." % uploadsrc2
 		    
 		if uploadname and uploadfile:
-		    uploadname = os.path.join("tmp/2", uploadname)
-		    outputfile = open(uploadname, "w")
-		    while 1:
-			line = uploadfile.readline()
-			if not line: break
-			# try to handle files with mac line endings well:
-			for l in line.rstrip("\n\r").split("\r"):
-			    outputfile.write(l.rstrip("\n\r"))
-			    outputfile.write("\n")
-			    linecount2 += 1
-		    outputfile.close()
-		    if not linecount2:
-			uploadmsg = "File 2 seems to be empty..."
-		    os.chmod(uploadname, 0666)
-		    filename2 = uploadname
+		    if not hasattr(uploadfile, "info") or uploadfile.info()["content-type"].startswith("text/plain"):
+			uploadname = os.path.join("tmp/2", uploadname)
+			outputfile = open(uploadname, "w")
+			while linecount2 < 32000:
+			    line = uploadfile.readline()
+			    if not line: break
+			    # try to handle files with mac line endings well:
+			    for l in line.rstrip("\n\r").split("\r"):
+				outputfile.write(l.rstrip("\n\r"))
+				outputfile.write("\n")
+				linecount2 += 1
+			outputfile.close()
+			if not linecount2:
+			    uploadmsg = "File 2 seems to be empty..."
+			os.chmod(uploadname, 0666)
+			filename2 = uploadname
+		    else:
+			uploadmsg = "The mime-type of file 2 is '%s', but 'text/plain' was expected" % uploadfile.info()["content-type"]
 	    else:
 		uploadmsg = "Upload aborted, got (%s) but a text file without odd characters in the name is expected here." % uploadname
 
-    if "--width" in args and args["--width"]:
-	width="--width "+args["--width"]
+    # argument cleaning
+    if "--width" in args and args["--width"].isdigit():
+        width = "--width "+args["--width"]
     else:
 	width=""
 
-    if "--oldcolour" in args and args["--oldcolour"]:
+    colours = [ "aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"]
+    if "--oldcolour" in args and args["--oldcolour"] in colours:
 	oldcolour = "--oldcolour "+args["--oldcolour"]
     else:
 	oldcolour = ""
 
-    if "--newcolour" in args and args["--newcolour"]:
+    if "--newcolour" in args and args["--newcolour"] in colours:
 	newcolour = "--newcolour "+args["--newcolour"]
     else:
 	newcolour = ""
 
+    difftypes = ["html", "chbars", "diff", "wdiff", "hwdiff", "abdiff" ]
+    difftype = ""
     if "difftype" in args:
-	difftype = args["difftype"]
-    else:
-	difftype = ""
+        if type(args["difftype"]) == type([]):
+            args["difftype"] = args["difftype"][0]
+        if args["difftype"].lstrip('-') in difftypes:
+            difftype = args["difftype"]
 
     if "--larger" in args:
 	larger = "--larger"
     else:
 	larger = ""
 
-
-    if debuginfo: out("\n\n<script type='text/javascript' language='JavaScript1.1'>alert(\"%s\");</script>" % (debuginfo))
+    if debuginfo:
+        out("\n\n<script type='text/javascript' language='JavaScript1.1'>alert(\"%s\");</script>" % (debuginfo.replace('"','\\"')))
     if filename1 and filename2 and linecount1 and linecount2:
 	uploadmsg = "Upload complete."
-	print "X-Debug-Info: %s" % debuginfo
 	if difftype in ("--abdiff", "--chbars"):
 	    print("Content-Type: text/plain\n\n")
 	else:
 	    print("Content-Type: text/html\n\n")
+	os.system("./rfcdiff --ignore-whitespace --stdout --links %s %s %s %s %s %s %s" % (width, difftype, oldcolour, newcolour, larger, filename1, filename2))
+        out("<!-- args: %s -->" % repr(args))
 
-	os.system("./rfcdiff --stdout --links %s %s %s %s %s %s %s" % (width, difftype, oldcolour, newcolour, larger, filename1, filename2))
 	#os.unlink(uploadname)
 	sys.exit(0)
 
@@ -294,7 +316,7 @@
 			</tr>
 			<tr>
 			   <td />
-			   <td>or enter URL:  &nbsp; </td>
+			   <td>or enter URL or draft name:  &nbsp; </td>
 			   <td><input name="url1" id="url1" type="text" size="50"></td>
 			</tr>
 			<tr><td colspan="3">&nbsp;</td></tr>
@@ -305,7 +327,7 @@
 			</tr>
 			<tr>
 			   <td />
-			   <td>or enter URL:  &nbsp; </td>
+			   <td>or enter URL or draft name:  &nbsp; </td>
 			   <td><input name="url2" id="url2" type="text" size="50"></td>
 			</tr>
 			<tr><td colspan="3">&nbsp;</td></tr>
@@ -378,7 +400,7 @@
     </tr>
   </table>
   <?python
-    if uploadmsg or info: out("<script type='text/javascript' language='JavaScript1.1'>alert(\"%s\");</script>" % (uploadmsg+". "+info))
+    if uploadmsg or info: out("<script type='text/javascript' language='JavaScript1.1'>alert(\"%s\");</script>" % (uploadmsg+". "+info).replace('"','\\"'))
   ?>
 </div>
 </body>
