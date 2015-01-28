@@ -102,7 +102,7 @@
 #		http://tools.ietf.org/tools/rfcdiff/
 #
 
-export version="1.41"
+export version="1.42"
 export progdate=""
 export prelines="10"
 export basename=$(basename $0)
@@ -293,9 +293,9 @@ function header(file1, file2) {
    url1 = file1;
    url2 = file2;
    if (optlinks) {
-      if (file1 ~ /^draft-/) { url1 = sprintf("<a href=\"/html/%s\" style=\"color:#008\">%s</a>", file1, file1); }
+      if (file1 ~ /^draft-/) { url1 = sprintf("<a href=\"https://tools.ietf.org/html/%s\" style=\"color:#008\">%s</a>", file1, file1); }
       if (file1 ~ /^draft-/) { prev = sprintf("<a href=\"/rfcdiff?url2=%s\" style=\"color:#008; text-decoration:none;\">&lt;</a>", file1); }
-      if (file2 ~ /^draft-/) { url2 = sprintf("<a href=\"/html/%s\" style=\"color:#008\">%s</a>", file2, file2); }
+      if (file2 ~ /^draft-/) { url2 = sprintf("<a href=\"https://tools.ietf.org/html/%s\" style=\"color:#008\">%s</a>", file2, file2); }
       if (file2 ~ /^draft-/) { nxt  = sprintf("<a href=\"/rfcdiff?url1=%s\" style=\"color:#008; text-decoration:none;\">&gt;</a>", file2) }
    }   
    printf "" \
