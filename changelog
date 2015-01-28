@@ -1,3 +1,33 @@
+rfcdiff (1.42)
+
+  * Removed sudo from the recipe for the Makefile install target
+
+  * Added a release target and sending of a release mail to the Makefile
+    upload target.
+
+  * Changed the generation of index.html to use man2html
+
+  * Changes in rfcdiff.pyht, for the web interface:
+
+    - Forced links to htmlized documents on tools.ietf.org to use https
+
+    - Don't refer to (unavailable) python package raw2event in rfcdiff.pyht
+
+    - Refined code in rfcdiff.pyht to find the latest rev of a draft
+
+    - Recognize https URL arguments, not just http and ftp
+
+    - Changed to use urllib2 instead of urllib
+
+    - Added handling for different line end conventions in rfcdiff.pyht
+
+    - Improved argument cleaning
+
+    - Changed default rfcdiff invocation from rfcdiff.pyht to ignore
+      whitespace changes
+
+ -- Henrik Levkowetz <henrik@levkowetz.com>  28 Jan 2015 9:00:27 +0200
+
 rfcdiff (1.41)
 
   * Under OS X 10.6.6 (at least), if gawk and nawk are unavailable, 
