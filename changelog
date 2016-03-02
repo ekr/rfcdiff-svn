@@ -1,3 +1,7 @@
+rfcdiff (1.43)
+
+  * Changed the output charset from ISO-8859-1 to UTF-8
+
 rfcdiff (1.42)
 
   * Removed sudo from the recipe for the Makefile install target
