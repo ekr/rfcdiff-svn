@@ -102,7 +102,7 @@
 #		http://tools.ietf.org/tools/rfcdiff/
 #
 
-export version="1.43"
+export version="1.44"
 export progdate=""
 export prelines="10"
 export basename=$(basename $0)
@@ -126,6 +126,17 @@ lookfor() {
 }
 
 AWK=$(lookfor gawk nawk awk)
+
+# ----------------------------------------------------------------------
+# Strip headers footers and formfeeds from infile to stdout
+# ----------------------------------------------------------------------
+stripbom() {
+  $AWK '
+NR==1				{ sub(/^\xef\xbb\xbf/,""); }
+				{ print ; }
+' "$1"
+}
+
 
 # ----------------------------------------------------------------------
 # Strip headers footers and formfeeds from infile to stdout
@@ -306,7 +317,7 @@ function header(file1, file2) {
 "<!-- Using awk: %s: %s --> \n" \
 "<!-- Using diff: %s: %s --> \n" \
 "<!-- Using wdiff: %s: %s --> \n" \
-"<html> \n" \
+"<html xmlns=\"http://www.w3.org/1999/xhtml\"> \n" \
 "<head> \n" \
 "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /> \n" \
 "  <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" /> \n" \
@@ -336,11 +347,15 @@ function header(file1, file2) {
 "    .insert .cont { background-color: #0DD; } \n" \
 "    .delete .cont { background-color: #8AD; } \n" \
 "    .stats, .stats td, .stats th { background-color: #EEE; padding: 2px 0; } \n" \
+"    span.hide { display: none; color: #aaa;}" \
+"    a:hover span { display: inline; }" \
+"    tr.change { background-color: gray; } \n" \
+"    tr.change a { text-decoration: none; color: black } \n" \
 "  </style> \n" \
 "</head> \n" \
 "<body > \n" \
 "  <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"> \n" \
-"  <tr bgcolor=\"orange\"><th></th><th>%s&nbsp;%s&nbsp;</th><th> </th><th>&nbsp;%s&nbsp;%s</th><th></th></tr> \n" \
+"  <tr id=\"part-1\" bgcolor=\"orange\"><th></th><th>%s&nbsp;%s&nbsp;</th><th> </th><th>&nbsp;%s&nbsp;%s</th><th></th></tr> \n" \
 "", ENVIRON["version"], ENVIRON["cmdline"], ENVIRON["uname"], ENVIRON["awkbin"], ENVIRON["awkver"], ENVIRON["diffbin"], ENVIRON["diffver"], ENVIRON["wdiffbin"], ENVIRON["wdiffver"], file1, file2, prev, url1, url2, nxt;
 }
 
@@ -442,7 +457,7 @@ function flush() {
       multiline = (difflines1 > 1) || (difflines2 > 1);
       if (multiline && (wdiff != "")) chunkdiff(difftag);
 
-      printf "      <tr><td><a name=\"diff%04d\" /></td></tr>\n", difftag;
+      printf "      <tr id=\"diff%04d\"><td></td></tr>\n", difftag;
       for (l = 0; l < difflines1 || l < difflines2; l++) {
 	 if (l in stack1) {
 	    line1 = stack1[l];
@@ -479,8 +494,8 @@ function flush() {
 	    sub(/<span class="delete"><\/span>/,"", line1);
 	    sub(/<span class="insert"><\/span>/,"", line2);
 	 }
-	 left  = sprintf("<td class=\"lineno\" valign=\"top\">%s</td><td class=\"lblock\">%s</td>", numdisplay(1, linenum1), line1);
-	 right = sprintf("<td class=\"rblock\">%s</td><td class=\"lineno\" valign=\"top\">%s</td>", line2, numdisplay(2, linenum2));
+	 left  = sprintf("<td class=\"lineno\">%s</td><td class=\"lblock\">%s</td>", numdisplay(1, linenum1), line1);
+	 right = sprintf("<td class=\"rblock\">%s</td><td class=\"lineno\">%s</td>", line2, numdisplay(2, linenum2));
 	 printf "      <tr>%s<td> </td>%s</tr>\n", left, right;
       }
    }
@@ -548,19 +563,21 @@ function maybebreakline(line,    width) {
 	      printf "      <tr><td class=\"lineno\"></td><td class=\"left\"></td><td> </td><td class=\"right\"></td><td class=\"lineno\"></td></tr>\n";
 	      page1 = getpage(1,linenum1);
 	      page2 = getpage(2,linenum2);
+
+	      difflabel = sprintf("part-%s", diffnum);
 	      if (page1 == "?") {
-		 posinfo1 = sprintf("<a name=\"part-l%s\" /><small>skipping to change at</small><em> line %s</em>", diffnum, getpageline(1, linenum1, page1));
+		 posinfo1 = sprintf("<small>skipping to change at</small><a href=\"#%s\"><em> line %s<span class=\"hide\"> &para;</span></em></a>", difflabel, getpageline(1, linenum1, page1));
 	      } else {
-		 posinfo1 = sprintf("<a name=\"part-l%s\" /><small>skipping to change at</small><em> page %s, line %s</em>", diffnum, page1, getpageline(1, linenum1, page1));
+		 posinfo1 = sprintf("<small>skipping to change at</small><a href=\"#%s\"><em> page %s, line %s<span class=\"hide\"> &para;</span></em></a>", difflabel, page1, getpageline(1, linenum1, page1));
 	      }
 
 	      if (page2 == "?") {
-		 posinfo2 = sprintf("<a name=\"part-r%s\" /><small>skipping to change at</small><em> line %s</em>", diffnum, getpageline(2, linenum2, page2));
+		 posinfo2 = sprintf("<small>skipping to change at</small><a href=\"#%s\"><em> line %s<span class=\"hide\"> &para;</span></em></a>", difflabel, getpageline(2, linenum2, page2));
 	      } else {
-		 posinfo2 = sprintf("<a name=\"part-r%s\" /><small>skipping to change at</small><em> page %s, line %s</em>", diffnum, page2, getpageline(2, linenum2, page2));
+		 posinfo2 = sprintf("<small>skipping to change at</small><a href=\"#%s\"><em> page %s, line %s<span class=\"hide\"> &para;</span></em></a>", difflabel, page2, getpageline(2, linenum2, page2));
 	      }
 
-	      printf "      <tr bgcolor=\"gray\" ><td></td><th>%s</th><th> </th><th>%s</th><td></td></tr>\n", posinfo1, posinfo2;
+	      printf "      <tr id=\"%s\" class=\"change\" ><td></td><th>%s</th><th> </th><th>%s</th><td></td></tr>\n", difflabel, posinfo1, posinfo2;
 	   }
 	}
 
@@ -573,8 +590,8 @@ function maybebreakline(line,    width) {
 	   flush();
 	   linenum1++;
 	   linenum2++;
-	   printf "      <tr><td class=\"lineno\" valign=\"top\">%s</td><td class=\"left\">%s</td><td> </td>", numdisplay(1, linenum1), line;
-	   printf "<td class=\"right\">%s</td><td class=\"lineno\" valign=\"top\">%s</td></tr>\n", line, numdisplay(2, linenum2);
+	   printf "      <tr><td class=\"lineno\">%s</td><td class=\"left\">%s</td><td> </td>", numdisplay(1, linenum1), line;
+	   printf "<td class=\"right\">%s</td><td class=\"lineno\">%s</td></tr>\n", line, numdisplay(2, linenum2);
 	   diffcount1 += difflines1
 	   difflines1 = 0
 	   diffcount2 += difflines2
@@ -599,7 +616,7 @@ END	{
 	   flush();
 	   printf("\n" \
 "     <tr><td></td><td class=\"left\"></td><td> </td><td class=\"right\"></td><td></td></tr>\n" \
-"     <tr bgcolor=\"gray\"><th colspan=\"5\" align=\"center\"><a name=\"end\">&nbsp;%s. %s change blocks.&nbsp;</a></th></tr>\n" \
+"     <tr id=\"end\" bgcolor=\"gray\"><th colspan=\"5\" align=\"center\">&nbsp;%s. %s change blocks.&nbsp;</th></tr>\n" \
 "     <tr class=\"stats\"><td></td><th><i>%s lines changed or deleted</i></th><th><i> </i></th><th><i>%s lines changed or added</i></th><td></td></tr>\n" \
 "     <tr><td colspan=\"5\" align=\"center\" class=\"small\"><br/>This html diff was produced by rfcdiff %s. The latest version is available from <a href=\"http://www.tools.ietf.org/tools/rfcdiff/\" >http://tools.ietf.org/tools/rfcdiff/</a> </td></tr>\n" \
 "   </table>\n" \
@@ -879,6 +896,15 @@ if [ $dowgetarg2 -gt 0 ]; then
 else
    cp "$2" $workdir/2/"$base2"
 fi
+
+# ----------------------------------------------------------------------
+# Remove UTF-8 BOMs
+# ----------------------------------------------------------------------
+
+stripbom $workdir/1/"$base1" > $workdir/1/"$base1".nobom
+mv -f $workdir/1/"$base1".nobom $workdir/1/"$base1"
+stripbom $workdir/2/"$base2" > $workdir/2/"$base2".nobom
+mv -f $workdir/2/"$base2".nobom $workdir/2/"$base2"
 
 # ----------------------------------------------------------------------
 # Maybe strip headers/footers from both files
