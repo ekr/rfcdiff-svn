@@ -1,3 +1,16 @@
+rfcdiff (1.44)
+
+  Applied 4 patches from julian.reschke@greenbytes.de, which:
+
+  * Added stripping of Byte Order Marks (BOMs)
+
+  * Changed many instances of <a name=...></a> to instead use id attributes
+    on page content elements
+
+  * Added fragment links from the page/line position text at the start of
+    each diff block
+ 
+
 rfcdiff (1.43)
 
   * Changed the output charset from ISO-8859-1 to UTF-8
