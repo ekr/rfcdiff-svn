@@ -10,6 +10,7 @@ mlchanges := $(shell sed -n "/^$(tool) ($(version).*)/,/^ -- /p" changelog | awk
 # Inline the javascript code from ekr in the distribution binary
 $(tool): $(tool).base
 	python ekr/merge.py $(tool).base $(tool).js $(tool)
+	chmod +x $(tool)
 
 upload::
 	echo -e "\n\
