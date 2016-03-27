@@ -1,11 +1,15 @@
 
 tool := rfcdiff
 
-sources += rfcdiff.pyht
+sources += rfcdiff.pyht rfcdiff.base rfcdiff.js
 
-include ../Makefile.common
+include Makefile.common
 
 mlchanges := $(shell sed -n "/^$(tool) ($(version).*)/,/^ -- /p" changelog | awk '{ if (line) print line "\\n"; line=$$0 }' )
+
+# Inline the javascript code from ekr in the distribution binary
+$(tool): $(tool).base
+	python ekr/merge.py $(tool).base $(tool).js $(tool)
 
 upload::
 	echo -e "\n\

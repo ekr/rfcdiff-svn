@@ -1,5 +1,9 @@
 rfcdiff (1.45)
 
+  * Added javascript support for moving to next and previous diff chunk with
+    the 'n' and 'p' keys, provided by ekr@rtfm.com.  See repository at
+    https://github.com/ekr/rfcdiff .
+
   * Applied 2 patches from dev@spiessknafl.at, which fixed a typo and updated
     the FSF address.
 
