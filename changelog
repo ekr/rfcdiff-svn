@@ -1,3 +1,10 @@
+rfcdiff (1.45)
+
+  * Applied 2 patches from dev@spiessknafl.at, which fixed a typo and updated
+    the FSF address.
+
+ -- Henrik Levkowetz <henrik@levkowetz.com>  25 Mar 2016 15:37:55 +0100
+
 rfcdiff (1.44)
 
   Applied 4 patches from julian.reschke@greenbytes.de, which:
@@ -10,10 +17,13 @@ rfcdiff (1.44)
   * Added fragment links from the page/line position text at the start of
     each diff block
  
+ -- Henrik Levkowetz <henrik@levkowetz.com>  5 Mar 2016 22:43:00 +0100
 
 rfcdiff (1.43)
 
   * Changed the output charset from ISO-8859-1 to UTF-8
+
+ -- Henrik Levkowetz <henrik@levkowetz.com>  3 Mar 2016 12:02:00 +0100
 
 rfcdiff (1.42)
 
@@ -192,7 +202,7 @@ rfcdiff (1.22)
 rfcdiff (1.21)
 
   * Added anchor for each diff, in order for it to be possible to create
-    URLs refering to individual diffs.
+    URLs referring to individual diffs.
 
  -- Henrik Levkowetz <henrik@levkowetz.com>  10 Dec 2004 00:00:00 +0100
 
