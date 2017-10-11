@@ -1047,7 +1047,7 @@ function change_chunk(offset) {
     }
     old_chunk = new_chunk;
     old_chunk.style.outline = "1px solid red";
-    window.location.hash = "#" + new_str;
+    window.location.replace("#" + new_str)
     window.scrollBy(0,-100);
     chunk_index = index;
 }
